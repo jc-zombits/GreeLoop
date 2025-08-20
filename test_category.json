@@ -1,0 +1,8 @@
+{
+  "name": "Electrónicos",
+  "description": "Dispositivos electrónicos, gadgets, computadoras, teléfonos",
+  "icon": "smartphone",
+  "color": "#2196F3",
+  "is_active": true,
+  "sort_order": 1
+}

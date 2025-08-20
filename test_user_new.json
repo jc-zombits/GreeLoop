@@ -1,0 +1,14 @@
+{
+  "email": "testuser_18b176e5@example.com",
+  "username": "testuser_18b176e5",
+  "password": "TestPassword123!",
+  "confirm_password": "TestPassword123!",
+  "first_name": "Test",
+  "last_name": "User",
+  "phone": "+1234567890",
+  "city": "Test City",
+  "state": "Test State",
+  "country": "Test Country",
+  "accept_terms": true,
+  "accept_privacy": true
+}
