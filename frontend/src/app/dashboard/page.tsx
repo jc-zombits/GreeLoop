@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Plus, Package, ArrowUpDown, Users, TrendingUp, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
+import CO2EducationalModal from '@/components/CO2EducationalModal';
 
 const stats = [
   { name: 'Items Publicados', value: '0', icon: Package, change: '+0 esta semana' },
@@ -34,6 +35,12 @@ const recentItems: RecentItem[] = [];
 const recentExchanges: RecentExchange[] = [];
 
 export default function Dashboard() {
+  const [isCO2ModalOpen, setIsCO2ModalOpen] = useState(false);
+
+  const handleCO2CardClick = () => {
+    setIsCO2ModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -69,16 +76,31 @@ export default function Dashboard() {
         <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => {
             const Icon = stat.icon;
+            const isEnvironmentalImpact = stat.name === 'Impacto Ambiental';
+            
             return (
-              <div key={stat.name} className="bg-white rounded-lg shadow p-6">
+              <div 
+                key={stat.name} 
+                className={`bg-white rounded-lg shadow p-6 ${
+                  isEnvironmentalImpact 
+                    ? 'cursor-pointer hover:shadow-lg hover:bg-green-50 transition-all duration-200 border-2 border-transparent hover:border-green-200' 
+                    : ''
+                }`}
+                onClick={isEnvironmentalImpact ? handleCO2CardClick : undefined}
+              >
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Icon className="h-8 w-8 text-green-600" />
+                    <Icon className={`h-8 w-8 ${
+                      isEnvironmentalImpact ? 'text-green-600' : 'text-green-600'
+                    }`} />
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">{stat.name}</p>
                     <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
                     <p className="text-sm text-green-600">{stat.change}</p>
+                    {isEnvironmentalImpact && (
+                      <p className="text-xs text-gray-500 mt-1">Click para saber más 💡</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -169,6 +191,13 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* CO2 Educational Modal */}
+        <CO2EducationalModal
+          isOpen={isCO2ModalOpen}
+          onClose={() => setIsCO2ModalOpen(false)}
+          co2Amount="0kg"
+        />
       </div>
     </div>
   );
