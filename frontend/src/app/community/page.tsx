@@ -30,18 +30,28 @@ interface ApiPost {
 const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isCommunityMember, setIsCommunityMember] = useState(false);
   
   useEffect(() => {
     // Verificar si hay token en localStorage
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     if (token) {
       setIsAuthenticated(true);
       // En una app real, aquí decodificarías el token para obtener la info del usuario
       setUser({ name: 'Usuario Actual', avatar: '/api/placeholder/40/40' });
+      
+      // Verificar si ya es miembro de la comunidad
+      const communityMembership = localStorage.getItem('communityMember');
+      setIsCommunityMember(communityMembership === 'true');
     }
   }, []);
   
-  return { isAuthenticated, user };
+  const joinCommunity = () => {
+    setIsCommunityMember(true);
+    localStorage.setItem('communityMember', 'true');
+  };
+  
+  return { isAuthenticated, user, isCommunityMember, joinCommunity };
 };
 
 interface CommunityStats {
@@ -88,7 +98,7 @@ interface CommunityPost {
 }
 
 const CommunityPage: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isCommunityMember, joinCommunity } = useAuth();
   const [stats, setStats] = useState<CommunityStats | null>(null);
   const [topUsers, setTopUsers] = useState<TopUser[]>([]);
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
@@ -183,7 +193,7 @@ const CommunityPage: React.FC = () => {
     
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('access_token');
       const response = await fetch('http://localhost:8000/api/v1/community/posts', {
         method: 'POST',
         headers: {
@@ -638,17 +648,52 @@ const CommunityPage: React.FC = () => {
             <Card className="mt-8 bg-green-50 border-green-200">
               <CardContent className="pt-6 text-center">
                 <Users className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  ¡Únete a la comunidad!
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  Forma parte de una comunidad comprometida con la sostenibilidad.
-                </p>
-                <Link href="/auth?mode=register">
-                  <Button className="w-full">
-                    Crear cuenta gratis
-                  </Button>
-                </Link>
+                {isAuthenticated ? (
+                  isCommunityMember ? (
+                    <>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        ¡Ya eres parte de la comunidad!
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        Gracias por ser parte activa de nuestra comunidad sostenible. Sigue compartiendo y aprendiendo.
+                      </p>
+                      <Button className="w-full bg-green-600 hover:bg-green-700" disabled>
+                        <Star className="h-4 w-4 mr-2" />
+                        Miembro activo
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        ¡Únete a la comunidad!
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        Forma parte activa de nuestra comunidad sostenible y comparte tus experiencias.
+                      </p>
+                      <Button 
+                        className="w-full bg-green-600 hover:bg-green-700"
+                        onClick={joinCommunity}
+                      >
+                        <Users className="h-4 w-4 mr-2" />
+                        Unirme a la comunidad
+                      </Button>
+                    </>
+                  )
+                ) : (
+                  <>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      ¡Únete a la comunidad!
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Crea tu cuenta gratuita para formar parte de una comunidad comprometida con la sostenibilidad.
+                    </p>
+                    <Link href="/auth?mode=register">
+                      <Button className="w-full">
+                        Crear cuenta gratis
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -23,6 +23,7 @@ const privateNavigation = [
   { name: 'Mis Items', href: '/items' },
   { name: 'Intercambios', href: '/exchanges' },
   { name: 'Mensajes', href: '/messages' },
+  { name: 'Comunidad', href: '/community' },
 ];
 
 export const Header: React.FC = () => {

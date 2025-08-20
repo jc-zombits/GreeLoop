@@ -139,6 +139,11 @@ docker-compose exec backend python scripts/seed_data.py
 - **Posts de comunidad**: Los usuarios pueden crear posts para compartir experiencias, consejos y discusiones sobre sostenibilidad
 - **Interacción social**: Sistema de posts con autor, fecha y contenido
 - **Navegación integrada**: Acceso directo desde el navbar principal
+- **Membresía contextual**: Botones dinámicos según estado de autenticación:
+  - Usuarios no logueados: "Crear cuenta gratis"
+  - Usuarios logueados no miembros: "Unirme a la comunidad" (funcional)
+  - Usuarios miembros: "Miembro activo" (estado confirmado)
+- **Persistencia de membresía**: Estado de membresía almacenado en localStorage
 - **API endpoints**: `/api/v1/community/posts` para gestión completa de posts
 
 #### Mejoras Técnicas
