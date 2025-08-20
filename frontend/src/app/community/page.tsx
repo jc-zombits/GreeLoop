@@ -1,10 +1,48 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users, MessageCircle, TrendingUp, Award, MapPin, Calendar, Star, Heart } from 'lucide-react';
+import { Users, MessageCircle, TrendingUp, Award, MapPin, Calendar, Star, Heart, Plus, Send } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
+
+interface AuthUser {
+  name: string;
+  avatar: string;
+}
+
+interface ApiPost {
+  id: string;
+  author: {
+    name: string;
+    avatar: string;
+    location: string;
+  };
+  content: string;
+  image_url?: string;
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+  post_type: 'success_story' | 'tip' | 'general';
+}
+
+// Simulamos el estado de autenticación - en una app real esto vendría del contexto de auth
+const useAuth = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  
+  useEffect(() => {
+    // Verificar si hay token en localStorage
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsAuthenticated(true);
+      // En una app real, aquí decodificarías el token para obtener la info del usuario
+      setUser({ name: 'Usuario Actual', avatar: '/api/placeholder/40/40' });
+    }
+  }, []);
+  
+  return { isAuthenticated, user };
+};
 
 interface CommunityStats {
   totalUsers: number;
@@ -23,6 +61,17 @@ interface TopUser {
   joinDate: string;
 }
 
+interface ApiUser {
+  id: string;
+  name: string;
+  username: string;
+  avatar: string;
+  location: string;
+  total_exchanges: number;
+  rating: number;
+  join_date: string;
+}
+
 interface CommunityPost {
   id: string;
   author: {
@@ -39,122 +88,85 @@ interface CommunityPost {
 }
 
 const CommunityPage: React.FC = () => {
+  const { isAuthenticated, user } = useAuth();
   const [stats, setStats] = useState<CommunityStats | null>(null);
   const [topUsers, setTopUsers] = useState<TopUser[]>([]);
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Estado para el formulario de crear post
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newPost, setNewPost] = useState({
+    title: '',
+    content: '',
+    post_type: 'general' as 'success_story' | 'tip' | 'general',
+    image_url: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchCommunityData = async () => {
       try {
         setLoading(true);
         
-        // Datos de demostración
-        const mockStats: CommunityStats = {
-          totalUsers: 12547,
-          totalExchanges: 8932,
-          itemsSaved: 15678,
-          co2Reduced: 2340
+        // Obtener estadísticas de la comunidad desde la API
+        const statsResponse = await fetch('http://localhost:8000/api/v1/community/stats');
+        if (!statsResponse.ok) {
+          throw new Error('Error al obtener estadísticas de la comunidad');
+        }
+        const statsData = await statsResponse.json();
+        
+        const communityStats: CommunityStats = {
+          totalUsers: statsData.total_users,
+          totalExchanges: statsData.total_exchanges,
+          itemsSaved: statsData.items_saved,
+          co2Reduced: statsData.co2_reduced
         };
 
-        const mockTopUsers: TopUser[] = [
-          {
-            id: '1',
-            name: 'Ana García',
-            avatar: '/api/placeholder/60/60',
-            location: 'Madrid, España',
-            totalExchanges: 47,
-            rating: 4.9,
-            joinDate: '2023-03-15'
-          },
-          {
-            id: '2',
-            name: 'Carlos Rodríguez',
-            avatar: '/api/placeholder/60/60',
-            location: 'Barcelona, España',
-            totalExchanges: 42,
-            rating: 4.8,
-            joinDate: '2023-02-20'
-          },
-          {
-            id: '3',
-            name: 'María López',
-            avatar: '/api/placeholder/60/60',
-            location: 'Valencia, España',
-            totalExchanges: 38,
-            rating: 4.9,
-            joinDate: '2023-04-10'
-          },
-          {
-            id: '4',
-            name: 'Luis Martín',
-            avatar: '/api/placeholder/60/60',
-            location: 'Sevilla, España',
-            totalExchanges: 35,
-            rating: 4.7,
-            joinDate: '2023-01-25'
-          }
-        ];
-
-        const mockPosts: CommunityPost[] = [
-          {
-            id: '1',
-            author: {
-              name: 'Ana García',
-              avatar: '/api/placeholder/40/40',
-              location: 'Madrid'
-            },
-            content: '¡Increíble intercambio! Cambié mi bicicleta vieja por una guitarra acústica perfecta. La comunidad de GreenLoop es fantástica. 🎸🚲',
-            image: '/api/placeholder/400/200',
-            likes: 24,
-            comments: 8,
-            createdAt: '2024-01-15T10:30:00Z',
-            type: 'success_story'
-          },
-          {
-            id: '2',
-            author: {
-              name: 'Carlos Rodríguez',
-              avatar: '/api/placeholder/40/40',
-              location: 'Barcelona'
-            },
-            content: 'Consejo: Siempre toma fotos desde múltiples ángulos cuando publiques un item. Ayuda mucho a generar confianza con otros usuarios. 📸',
-            likes: 18,
-            comments: 5,
-            createdAt: '2024-01-14T15:45:00Z',
-            type: 'tip'
-          },
-          {
-            id: '3',
-            author: {
-              name: 'María López',
-              avatar: '/api/placeholder/40/40',
-              location: 'Valencia'
-            },
-            content: 'Después de 6 meses en GreenLoop, he intercambiado 15 items y conocido personas increíbles. ¡Esta plataforma cambió mi forma de consumir! 🌱',
-            likes: 31,
-            comments: 12,
-            createdAt: '2024-01-13T09:20:00Z',
-            type: 'success_story'
-          },
-          {
-            id: '4',
-            author: {
-              name: 'Luis Martín',
-              avatar: '/api/placeholder/40/40',
-              location: 'Sevilla'
-            },
-            content: '¿Alguien más piensa que deberíamos organizar un evento de intercambio presencial en cada ciudad? Sería genial conocernos en persona.',
-            likes: 15,
-            comments: 9,
-            createdAt: '2024-01-12T18:10:00Z',
-            type: 'general'
-          }
-        ];
+        // Obtener usuarios destacados desde la API
+        const usersResponse = await fetch('http://localhost:8000/api/v1/community/top-users?limit=10');
+        if (!usersResponse.ok) {
+          throw new Error('Error al obtener usuarios destacados');
+        }
+        const usersData = await usersResponse.json();
         
-        setStats(mockStats);
-        setTopUsers(mockTopUsers);
-        setCommunityPosts(mockPosts);
+        const topUsers: TopUser[] = usersData.users.map((user: ApiUser) => ({
+          id: user.id,
+          name: user.name,
+          avatar: user.avatar,
+          location: user.location,
+          totalExchanges: user.total_exchanges,
+          rating: user.rating,
+          joinDate: user.join_date
+        }));
+
+        // Obtener posts de la comunidad desde la API
+        const postsResponse = await fetch('http://localhost:8000/api/v1/community/posts?page=1&limit=10');
+        let communityPosts: CommunityPost[] = [];
+        
+        if (postsResponse.ok) {
+          const postsData = await postsResponse.json();
+          communityPosts = postsData.posts.map((post: ApiPost) => ({
+            id: post.id,
+            author: {
+              name: post.author.name,
+              avatar: post.author.avatar,
+              location: post.author.location
+            },
+            content: post.content,
+            image: post.image_url,
+            likes: post.likes_count,
+            comments: post.comments_count,
+            createdAt: post.created_at,
+            type: post.post_type
+          }));
+        } else {
+          console.warn('No se pudieron cargar los posts de la comunidad');
+        }
+        
+        setStats(communityStats);
+        setTopUsers(topUsers);
+        setCommunityPosts(communityPosts);
       } catch (error) {
         console.error('Error fetching community data:', error);
       } finally {
@@ -164,6 +176,62 @@ const CommunityPage: React.FC = () => {
 
     fetchCommunityData();
   }, []);
+
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAuthenticated || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8000/api/v1/community/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newPost)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        // Agregar el nuevo post al inicio de la lista
+        const newPostData: CommunityPost = {
+          id: result.post.id,
+          author: {
+            name: result.post.author.name,
+            avatar: result.post.author.avatar,
+            location: result.post.author.location
+          },
+          content: result.post.content,
+          image: result.post.image_url,
+          likes: result.post.likes_count,
+          comments: result.post.comments_count,
+          createdAt: result.post.created_at,
+          type: result.post.post_type
+        };
+        
+        setCommunityPosts(prev => [newPostData, ...prev]);
+        
+        // Resetear formulario
+        setNewPost({
+          title: '',
+          content: '',
+          post_type: 'general',
+          image_url: ''
+        });
+        setShowCreateForm(false);
+      } else {
+        console.error('Error al crear el post');
+        alert('Error al crear el post. Por favor, intenta de nuevo.');
+      }
+    } catch (error) {
+      console.error('Error creating post:', error);
+      alert('Error al crear el post. Por favor, intenta de nuevo.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const formatNumber = (num: number): string => {
     if (num >= 1000) {
@@ -257,12 +325,216 @@ const CommunityPage: React.FC = () => {
           </div>
         )}
 
+        {/* Create Post Section */}
+        {isAuthenticated && (
+          <div className="mb-8">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Comparte con la comunidad</CardTitle>
+                    <CardDescription>Cuenta tu experiencia, comparte consejos o inicia una conversación</CardDescription>
+                  </div>
+                  {!showCreateForm && (
+                    <Button onClick={() => setShowCreateForm(true)} className="flex items-center space-x-2">
+                      <Plus className="h-4 w-4" />
+                      <span>Crear post</span>
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              {showCreateForm && (
+                <CardContent>
+                  <form onSubmit={handleCreatePost} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Título (opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={newPost.title}
+                        onChange={(e) => setNewPost(prev => ({ ...prev, title: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="Título de tu publicación..."
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Contenido *
+                      </label>
+                      <textarea
+                        value={newPost.content}
+                        onChange={(e) => setNewPost(prev => ({ ...prev, content: e.target.value }))}
+                        required
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="¿Qué quieres compartir con la comunidad?"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tipo de publicación
+                      </label>
+                      <select
+                        value={newPost.post_type}
+                        onChange={(e) => setNewPost(prev => ({ ...prev, post_type: e.target.value as 'success_story' | 'tip' | 'general' }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        <option value="general">General</option>
+                        <option value="tip">Consejo</option>
+                        <option value="success_story">Historia de éxito</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        URL de imagen (opcional)
+                      </label>
+                      <input
+                        type="url"
+                        value={newPost.image_url}
+                        onChange={(e) => setNewPost(prev => ({ ...prev, image_url: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="https://ejemplo.com/imagen.jpg"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting || !newPost.content.trim()}
+                        className="flex items-center space-x-2"
+                      >
+                        <Send className="h-4 w-4" />
+                        <span>{isSubmitting ? 'Publicando...' : 'Publicar'}</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowCreateForm(false);
+                          setNewPost({ title: '', content: '', post_type: 'general', image_url: '' });
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              )}
+            </Card>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Community Posts */}
           <div className="lg:col-span-2">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Actividad de la Comunidad</h2>
-              <p className="text-gray-600">Descubre las últimas historias y consejos de nuestra comunidad</p>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Actividad de la Comunidad</h2>
+                  <p className="text-gray-600">Descubre las últimas historias y consejos de nuestra comunidad</p>
+                </div>
+                {isAuthenticated && (
+                  <Button
+                    onClick={() => setShowCreateForm(!showCreateForm)}
+                    className="flex items-center space-x-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Crear Post</span>
+                  </Button>
+                )}
+              </div>
+              
+              {/* Formulario para crear post */}
+              {showCreateForm && isAuthenticated && (
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle>Crear nueva publicación</CardTitle>
+                    <CardDescription>
+                      Comparte tu experiencia, consejos o ideas con la comunidad
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleCreatePost} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Título (opcional)
+                        </label>
+                        <input
+                          type="text"
+                          value={newPost.title}
+                          onChange={(e) => setNewPost(prev => ({ ...prev, title: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                          placeholder="Título de tu publicación..."
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Contenido *
+                        </label>
+                        <textarea
+                          value={newPost.content}
+                          onChange={(e) => setNewPost(prev => ({ ...prev, content: e.target.value }))}
+                          required
+                          rows={4}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                          placeholder="¿Qué quieres compartir con la comunidad?"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Tipo de publicación
+                        </label>
+                        <select
+                          value={newPost.post_type}
+                          onChange={(e) => setNewPost(prev => ({ ...prev, post_type: e.target.value as 'success_story' | 'tip' | 'general' }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        >
+                          <option value="general">General</option>
+                          <option value="tip">Consejo</option>
+                          <option value="success_story">Historia de éxito</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          URL de imagen (opcional)
+                        </label>
+                        <input
+                          type="url"
+                          value={newPost.image_url}
+                          onChange={(e) => setNewPost(prev => ({ ...prev, image_url: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                          placeholder="https://ejemplo.com/imagen.jpg"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center space-x-3">
+                        <Button
+                          type="submit"
+                          disabled={isSubmitting || !newPost.content.trim()}
+                          className="flex items-center space-x-2"
+                        >
+                          <Send className="h-4 w-4" />
+                          <span>{isSubmitting ? 'Publicando...' : 'Publicar'}</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowCreateForm(false)}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             <div className="space-y-6">
@@ -372,7 +644,7 @@ const CommunityPage: React.FC = () => {
                 <p className="text-gray-600 mb-4">
                   Forma parte de una comunidad comprometida con la sostenibilidad.
                 </p>
-                <Link href="/auth">
+                <Link href="/auth?mode=register">
                   <Button className="w-full">
                     Crear cuenta gratis
                   </Button>

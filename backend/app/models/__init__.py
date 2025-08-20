@@ -9,6 +9,7 @@ from .message import Message, MessageType
 from .rating import Rating
 from .notification import Notification, NotificationType, NotificationPriority
 from .user_session import UserSession
+from .community_post import CommunityPost, CommunityPostLike, CommunityPostComment, PostType
 
 # Exportar todos los modelos
 __all__ = [
@@ -26,5 +27,9 @@ __all__ = [
     "Notification",
     "NotificationType",
     "NotificationPriority",
-    "UserSession"
+    "UserSession",
+    "CommunityPost",
+    "CommunityPostLike",
+    "CommunityPostComment",
+    "PostType"
 ]

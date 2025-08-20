@@ -8,6 +8,7 @@ from .categories import router as categories_router
 from .notifications import router as notifications_router
 from .ratings import router as ratings_router
 from .messages import router as messages_router
+from .community import router as community_router
 
 api_router = APIRouter()
 
@@ -58,4 +59,10 @@ api_router.include_router(
     messages_router,
     prefix="/messages",
     tags=["messages"]
+)
+
+api_router.include_router(
+    community_router,
+    prefix="/community",
+    tags=["community"]
 )

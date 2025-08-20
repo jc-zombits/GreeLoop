@@ -198,6 +198,43 @@ from .notification import (
     ScheduledNotificationResponse
 )
 
+# Esquemas de comunidad
+from .community import (
+    PostType,
+    PostAuthor,
+    CommunityPostCreate,
+    CommunityPostSchema,
+    CommunityPost,
+    CommunityPostList,
+    PostResponse,
+    LikeResponse,
+    CommunityStatsResponse,
+    TopUser,
+    TopUsersResponse,
+    ApiUser
+)
+
+# Esquemas de posts de comunidad
+from .community_post import (
+    CommunityPostBase,
+    CommunityPostCreate,
+    CommunityPostUpdate,
+    PostAuthor,
+    CommunityPost,
+    CommunityPostList,
+    CommunityPostLikeCreate,
+    CommunityPostLike,
+    CommunityPostCommentBase,
+    CommunityPostCommentCreate,
+    CommunityPostCommentUpdate,
+    CommentAuthor,
+    CommunityPostComment,
+    CommunityPostCommentList,
+    PostResponse,
+    LikeResponse,
+    CommentResponse
+)
+
 __all__ = [
     # Auth
     "LoginRequest",
@@ -382,4 +419,35 @@ __all__ = [
     "NotificationDigest",
     "ScheduledNotificationCreate",
     "ScheduledNotificationResponse",
+    # Esquemas de comunidad
+    "PostType",
+    "PostAuthor",
+    "CommunityPostCreate",
+    "CommunityPostSchema",
+    "CommunityPost",
+    "CommunityPostList",
+    "PostResponse",
+    "LikeResponse",
+    "CommunityStatsResponse",
+    "TopUser",
+    "TopUsersResponse",
+    "ApiUser",
+    # Posts de comunidad
+    "CommunityPostBase",
+    "CommunityPostCreate",
+    "CommunityPostUpdate",
+    "PostAuthor",
+    "CommunityPost",
+    "CommunityPostList",
+    "CommunityPostLikeCreate",
+    "CommunityPostLike",
+    "CommunityPostCommentBase",
+    "CommunityPostCommentCreate",
+    "CommunityPostCommentUpdate",
+    "CommentAuthor",
+    "CommunityPostComment",
+    "CommunityPostCommentList",
+    "PostResponse",
+    "LikeResponse",
+    "CommentResponse",
 ]

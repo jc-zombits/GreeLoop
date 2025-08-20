@@ -20,6 +20,8 @@ Trueque Verde 2.0 es una plataforma global de intercambio sostenible que facilit
 - ✅ **Sistema de reputación** básico
 - ✅ **Mapa interactivo** para visualización
 - ✅ **Notificaciones** en tiempo real
+- ✅ **Comunidad** con posts y discusiones
+- ✅ **Configuración de puertos** estable para desarrollo
 
 ### Funcionalidades Futuras
 - 🔄 **Recompensas verdes** por frecuencia de intercambio
@@ -131,6 +133,19 @@ docker-compose exec backend python scripts/seed_data.py
 - **Backend API**: http://localhost:8000
 - **Documentación API**: http://localhost:8000/docs
 
+### 🌟 Nuevas Funcionalidades
+
+#### Sección de Comunidad
+- **Posts de comunidad**: Los usuarios pueden crear posts para compartir experiencias, consejos y discusiones sobre sostenibilidad
+- **Interacción social**: Sistema de posts con autor, fecha y contenido
+- **Navegación integrada**: Acceso directo desde el navbar principal
+- **API endpoints**: `/api/v1/community/posts` para gestión completa de posts
+
+#### Mejoras Técnicas
+- **Puertos estables**: Frontend siempre en puerto 3000, backend en puerto 8000
+- **Proxy configurado**: Redirección automática de `/api/*` al backend
+- **Experiencia de usuario mejorada**: URLs consistentes y predecibles
+
 ## 🧪 Desarrollo Local
 
 ### Backend (FastAPI)
@@ -169,6 +184,7 @@ npm run dev
 - **Messages**: Chat de intercambios
 - **Ratings**: Sistema de calificaciones
 - **Notifications**: Notificaciones del sistema
+- **CommunityPosts**: Posts de la comunidad para discusiones
 
 ### Migraciones
 ```bash
