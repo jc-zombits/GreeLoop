@@ -252,9 +252,9 @@ docker-compose exec frontend npm run test:watch
 
 ### Fase 1: MVP (14 semanas)
 - [x] Configuración inicial del proyecto
-- [ ] Backend core (autenticación, usuarios, objetos)
-- [ ] Frontend core (páginas principales, componentes)
-- [ ] Sistema de intercambios y chat
+- [x] Backend core (autenticación, usuarios, objetos)
+- [x] Frontend core (páginas principales, componentes)
+- [x] Sistema de intercambios y chat
 - [ ] Integración de mapas
 - [ ] Testing y deploy
 
@@ -277,15 +277,15 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 ## 👥 Equipo
 
-- **Desarrollador Principal**: [Tu Nombre]
-- **Arquitecto de Software**: [Tu Nombre]
-- **DevOps Engineer**: [Tu Nombre]
+- **Desarrollador Principal**: Juan Camilo Cardona Pizarro
+- **Arquitecto de Software**: Juan Camilo Cardona Pizarro
+- **DevOps Engineer**: Juan Camilo Cardona Pizarro
 
 ## 📞 Contacto
 
-- **Email**: tu-email@ejemplo.com
+- **Email**: jucampuca@gmail.com
 - **LinkedIn**: [Tu LinkedIn]
-- **GitHub**: [Tu GitHub]
+- **GitHub**: https://github.com/jucampuca
 
 ---
 
