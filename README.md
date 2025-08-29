@@ -284,7 +284,7 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 ## 📞 Contacto
 
 - **Email**: jucampuca@gmail.com
-- **LinkedIn**: [Tu LinkedIn]
+- **LinkedIn**: https://www.linkedin.com/in/jcardonapizarro/
 - **GitHub**: https://github.com/jucampuca
 
 ---
