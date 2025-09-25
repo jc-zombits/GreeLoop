@@ -110,7 +110,16 @@ cp frontend/.env.local.example frontend/.env.local
 # Editar frontend/.env.local con tus configuraciones
 ```
 
-### 3. Iniciar con Docker Compose
+### 3. Iniciar los servicios en el servidor local
+```bash
+# Backend
+cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Frontend
+cd frontend && npm run dev
+```
+
+### 4. Iniciar con Docker Compose
 ```bash
 # Construir e iniciar todos los servicios
 docker-compose up --build
@@ -119,7 +128,7 @@ docker-compose up --build
 docker-compose up -d --build
 ```
 
-### 4. Ejecutar Migraciones
+### 5. Ejecutar Migraciones
 ```bash
 # Ejecutar migraciones de base de datos
 docker-compose exec backend alembic upgrade head
@@ -128,7 +137,7 @@ docker-compose exec backend alembic upgrade head
 docker-compose exec backend python scripts/seed_data.py
 ```
 
-### 5. Acceder a la Aplicación
+### 6. Acceder a la Aplicación
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000
 - **Documentación API**: http://localhost:8000/docs
