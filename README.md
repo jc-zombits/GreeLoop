@@ -254,7 +254,9 @@ docker-compose exec frontend npm run test:watch
 - [x] Configuración inicial del proyecto
 - [x] Backend core (autenticación, usuarios, objetos)
 - [x] Frontend core (páginas principales, componentes)
+- [x] Interfaz para empresas y usuarios
 - [x] Sistema de intercambios y chat
+- [x] Sistema de contribuciones
 - [ ] Integración de mapas
 - [ ] Testing y deploy
 
