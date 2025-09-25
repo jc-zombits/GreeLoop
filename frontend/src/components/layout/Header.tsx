@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Leaf, User, Bell, Settings, LogOut, Plus, MessageCircle, Heart, Search } from 'lucide-react';
+import { Menu, X, Leaf, User, Bell, Settings, LogOut, Plus, MessageCircle, Heart, Search, ChevronDown, Gift, Users, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
+import { isCompany, isUser } from '@/types';
 import { cn } from '@/lib/utils';
 
 const publicNavigation = [
@@ -29,29 +30,56 @@ const privateNavigation = [
 export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const companyDropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  const { user, logout, loading } = useAuth();
+  const { user, userType, logout, loading } = useAuth();
   const { unreadCount } = useNotifications();
 
-  // Cerrar menú al hacer clic fuera
+  // Cerrar menús al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
         setProfileMenuOpen(false);
       }
+      if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target as Node)) {
+        setCompanyDropdownOpen(false);
+      }
     };
 
-    if (profileMenuOpen) {
+    if (profileMenuOpen || companyDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [profileMenuOpen]);
+  }, [profileMenuOpen, companyDropdownOpen]);
   
-  const navigation = user ? privateNavigation : publicNavigation;
+  // Navegación dinámica según el tipo de usuario
+  const getPrivateNavigation = () => {
+    if (userType === 'company') {
+      return [
+        { name: 'Inicio', href: '/' },
+        { name: 'Dashboard', href: '/company-dashboard' },
+        { name: 'Mensajes', href: '/messages' },
+        { name: 'Comunidad', href: '/community' },
+      ];
+    } else {
+      return privateNavigation;
+    }
+  };
+
+  // Opciones del dropdown para empresas
+  const companyDropdownOptions = [
+    { name: 'Nueva Contribución', href: '/contributions/new', icon: Plus },
+    { name: 'Mis Contribuciones', href: '/contributions', icon: Gift },
+    { name: 'Solicitudes Recibidas', href: '/contributions/requests', icon: Users },
+    { name: 'Explorar Categorías', href: '/contributions/categories', icon: Calendar },
+  ];
+  
+  const navigation = user ? getPrivateNavigation() : publicNavigation;
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -81,19 +109,68 @@ export const Header: React.FC = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {/* Dropdown para empresas */}
+            {userType === 'company' && (
+              <div className="relative" ref={companyDropdownRef}>
+                <button
+                  onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
+                  className={cn(
+                    'px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1',
+                    companyDropdownOpen || ['/contributions', '/contributions/new', '/contributions/requests', '/contributions/categories'].some(path => pathname.startsWith(path))
+                      ? 'text-green-600 bg-green-50'
+                      : 'text-gray-700 hover:text-green-600 hover:bg-green-50'
+                  )}
+                >
+                  Contribuciones
+                  <ChevronDown className={cn(
+                    'h-4 w-4 transition-transform',
+                    companyDropdownOpen ? 'rotate-180' : ''
+                  )} />
+                </button>
+                
+                {companyDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                    {companyDropdownOptions.map((option) => {
+                      const Icon = option.icon;
+                      return (
+                        <Link
+                          key={option.name}
+                          href={option.href}
+                          onClick={() => setCompanyDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+                        >
+                          <Icon className="h-4 w-4" />
+                          {option.name}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
 
           {/* Right side */}
           <div className="flex items-center space-x-3">
             {user ? (
               <>
-                {/* Publicar Item */}
-                <Link href="/items/new">
-                  <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                    <Plus className="h-4 w-4 mr-1" />
-                    <span className="hidden sm:inline">Publicar</span>
-                  </Button>
-                </Link>
+                {/* Botón dinámico según tipo de usuario */}
+                {userType === 'company' ? (
+                  <Link href="/exchanges">
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                      <Search className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Intercambios</span>
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href="/items/new">
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                      <Plus className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Publicar</span>
+                    </Button>
+                  </Link>
+                )}
                 
                 {/* Notificaciones */}
                 <Link href="/notifications">
@@ -118,7 +195,11 @@ export const Header: React.FC = () => {
                   >
                     <User className="h-4 w-4" />
                     <span className="hidden sm:inline truncate max-w-[120px] font-medium">
-                      {user.first_name || user.username || 'Mi Perfil'}
+                      {user ? (
+                        isUser(user) 
+                          ? (user.first_name || user.username)
+                          : (user.company_name || user.username)
+                      ) : 'Mi Perfil'}
                     </span>
                   </Button>
                   

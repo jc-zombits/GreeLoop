@@ -1,5 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS } from './constants';
-import { ApiResponse, PaginatedResponse, User, Category, Item } from '@/types';
+import { ApiResponse, PaginatedResponse, User, Category, Item, Company } from '@/types';
 
 // Tipos específicos para la API
 interface LoginCredentials {
@@ -16,6 +16,36 @@ interface RegisterData {
   city?: string;
   state?: string;
   country?: string;
+  password: string;
+  confirm_password: string;
+  accept_terms: boolean;
+  accept_privacy: boolean;
+}
+
+interface CompanyLoginCredentials {
+  email: string;
+  password: string;
+}
+
+interface CompanyRegisterData {
+  username: string;
+  email: string;
+  company_name: string;
+  tax_id?: string;
+  industry?: string;
+  company_size?: string;
+  website?: string;
+  phone?: string;
+  bio?: string;
+  contact_name?: string;
+  contact_position?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
   password: string;
   confirm_password: string;
   accept_terms: boolean;
@@ -39,6 +69,24 @@ interface AuthResponse {
     user_id: string;
     created_at: string;
     expires_at: string;
+  };
+}
+
+interface CompanyAuthResponse {
+  message: string;
+  company: Company;
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+  session_info: {
+    id: string;
+    device_name?: string;
+    location_display?: string;
+    ip_address?: string;
+    created_at: string;
+    last_activity: string;
+    time_until_expiry_hours: number;
   };
 }
 
@@ -187,16 +235,46 @@ class ApiClient {
           message: `HTTP ${response.status}: ${response.statusText}`
         }));
         
-        // Manejar errores de validación de FastAPI (422)
-        if (response.status === 422 && errorData.detail && Array.isArray(errorData.detail)) {
-          const validationErrors = errorData.detail.map((err: { loc?: string[]; msg: string }) => {
-            const field = err.loc ? err.loc.join('.') : 'campo';
-            return `${field}: ${err.msg}`;
-          }).join(', ');
-          throw new Error(`Errores de validación: ${validationErrors}`);
+        // Manejar errores según el código de estado HTTP
+        let errorMessage = errorData.detail || errorData.message || 'Error en la petición';
+        
+        switch (response.status) {
+          case 400:
+            errorMessage = errorData.detail || 'Datos de solicitud inválidos';
+            break;
+          case 401:
+            errorMessage = 'No autorizado. Por favor, inicia sesión nuevamente';
+            break;
+          case 403:
+            errorMessage = 'No tienes permiso para realizar esta acción';
+            break;
+          case 404:
+            errorMessage = 'El recurso solicitado no existe';
+            break;
+          case 409:
+            // Conflictos como email/username ya existentes
+            errorMessage = errorData.detail || 'Conflicto con el estado actual del recurso';
+            break;
+          case 422:
+            // Manejar errores de validación de FastAPI
+            if (errorData.detail && Array.isArray(errorData.detail)) {
+              const validationErrors = errorData.detail.map((err: { loc?: string[]; msg: string }) => {
+                const field = err.loc ? err.loc.join('.') : 'campo';
+                return `${field}: ${err.msg}`;
+              }).join(', ');
+              errorMessage = `Errores de validación: ${validationErrors}`;
+            } else {
+              errorMessage = errorData.detail || 'Datos de solicitud inválidos';
+            }
+            break;
+          case 500:
+            errorMessage = 'Error interno del servidor. Por favor, inténtalo más tarde';
+            break;
+          default:
+            errorMessage = errorData.detail || errorData.message || `Error ${response.status}: ${response.statusText}`;
         }
         
-        throw new Error(errorData.detail || errorData.message || 'Error en la petición');
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -286,7 +364,7 @@ export const apiClient = new ApiClient();
 
 // Funciones de utilidad para endpoints específicos
 export const api = {
-  // Autenticación
+  // Autenticación de usuarios
   auth: {
     login: (credentials: LoginCredentials) =>
       apiClient.post<AuthResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials, false),
@@ -294,6 +372,17 @@ export const api = {
       apiClient.post<AuthResponse>(API_ENDPOINTS.AUTH.REGISTER, userData, false),
     me: () => apiClient.get<User>(API_ENDPOINTS.AUTH.ME),
     logout: () => apiClient.post(API_ENDPOINTS.AUTH.LOGOUT),
+  },
+  
+  // Autenticación de empresas
+  companyAuth: {
+    login: (credentials: CompanyLoginCredentials) =>
+      apiClient.post<CompanyAuthResponse>(API_ENDPOINTS.COMPANY_AUTH.LOGIN, credentials, false),
+    register: (companyData: CompanyRegisterData) =>
+      apiClient.post<CompanyAuthResponse>(API_ENDPOINTS.COMPANY_AUTH.REGISTER, companyData, false),
+    me: () => apiClient.get<Company>(API_ENDPOINTS.COMPANY_AUTH.ME),
+    logout: () => apiClient.post(API_ENDPOINTS.COMPANY_AUTH.LOGOUT),
+    refresh: () => apiClient.post(API_ENDPOINTS.COMPANY_AUTH.REFRESH),
   },
 
   // Usuarios

@@ -8,6 +8,13 @@ export const API_ENDPOINTS = {
     ME: '/api/v1/auth/me',
     REFRESH: '/api/v1/auth/refresh'
   },
+  COMPANY_AUTH: {
+    LOGIN: '/api/v1/company-auth/login',
+    REGISTER: '/api/v1/company-auth/register',
+    LOGOUT: '/api/v1/company-auth/logout',
+    ME: '/api/v1/company-auth/me',
+    REFRESH: '/api/v1/company-auth/refresh'
+  },
   USERS: {
     PROFILE: '/api/v1/users/profile',
     UPDATE: '/api/v1/users/update',

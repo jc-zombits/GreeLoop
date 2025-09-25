@@ -86,6 +86,26 @@ export default function Exchanges() {
           </p>
         </div>
 
+        {/* Quick Actions */}
+        <div className="mb-8 flex flex-wrap gap-4">
+          <Link href="/items/new">
+            <Button className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Publicar Item
+            </Button>
+          </Link>
+          <Link href="/categories">
+            <Button variant="outline">
+              Explorar Categorías
+            </Button>
+          </Link>
+          <Link href="/items">
+            <Button variant="outline">
+              Ver Mis Items
+            </Button>
+          </Link>
+        </div>
+
         {/* Stats */}
         <div className="mb-8 grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg shadow p-4">

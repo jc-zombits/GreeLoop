@@ -9,6 +9,8 @@ from .notifications import router as notifications_router
 from .ratings import router as ratings_router
 from .messages import router as messages_router
 from .community import router as community_router
+from .company_auth import router as company_auth_router
+from .contributions import router as contributions_router
 
 api_router = APIRouter()
 
@@ -65,4 +67,16 @@ api_router.include_router(
     community_router,
     prefix="/community",
     tags=["community"]
+)
+
+api_router.include_router(
+    company_auth_router,
+    prefix="/company-auth",
+    tags=["company-authentication"]
+)
+
+api_router.include_router(
+    contributions_router,
+    prefix="/contributions",
+    tags=["contributions"]
 )

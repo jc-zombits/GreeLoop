@@ -15,7 +15,7 @@ export default function Home() {
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
               GreenLoop es la plataforma que conecta personas para intercambiar objetos,
-              promoviendo la economía circular y reduciendo el desperdicio.
+              promoviendo la economía circular y reduciendo la acumulación de CO2.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link href="/dashboard">

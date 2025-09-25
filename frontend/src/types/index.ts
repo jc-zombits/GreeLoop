@@ -29,6 +29,52 @@ export interface User {
   rating?: number;
   totalExchanges?: number;
   isVerified?: boolean;
+  user_type?: 'user';
+}
+
+// Company types
+export interface Company {
+  id: string;
+  username: string;
+  company_name: string;
+  full_name: string; // Alias for company_name for compatibility
+  email: string;
+  tax_id?: string;
+  industry?: string;
+  company_size?: string;
+  website?: string;
+  phone?: string;
+  bio?: string;
+  logo_url?: string;
+  contact_name?: string;
+  contact_position?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  created_at: string;
+  last_login?: string;
+  is_active: boolean;
+  is_verified: boolean;
+  email_verified: boolean;
+  phone_verified: boolean;
+  reputation_score: number;
+  total_exchanges: number;
+  successful_exchanges: number;
+  collaboration_type?: string;
+  user_type: 'company';
+}
+
+// Type guards
+export function isCompany(user: User | Company): user is Company {
+  return user.user_type === 'company';
+}
+
+export function isUser(user: User | Company): user is User {
+  return user.user_type === 'user' || !user.user_type;
 }
 
 // Item types
@@ -154,13 +200,19 @@ export interface PaginatedResponse<T> {
 export interface LoginForm {
   email: string;
   password: string;
+  user_type?: 'user' | 'company';
+}
+
+export interface CompanyLoginForm {
+  email: string;
+  password: string;
 }
 
 export interface RegisterForm {
   username: string;
+  email: string;
   first_name: string;
   last_name: string;
-  email: string;
   phone?: string;
   city?: string;
   state?: string;
@@ -169,6 +221,32 @@ export interface RegisterForm {
   confirm_password: string;
   accept_terms: boolean;
   accept_privacy: boolean;
+}
+
+export interface CompanyRegisterForm {
+  username: string;
+  email: string;
+  company_name: string;
+  tax_id?: string;
+  industry?: string;
+  company_size?: string;
+  website?: string;
+  phone?: string;
+  bio?: string;
+  contact_name?: string;
+  contact_position?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  password: string;
+  confirm_password: string;
+  accept_terms: boolean;
+  accept_privacy: boolean;
+  collaboration_type?: string;
 }
 
 export interface ItemForm {
