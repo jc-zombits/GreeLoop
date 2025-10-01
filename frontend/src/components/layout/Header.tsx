@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Leaf, User, Bell, Settings, LogOut, Plus, MessageCircle, Heart, Search, ChevronDown, Gift, Users, Calendar } from 'lucide-react';
+import { Menu, X, Leaf, User, Bell, Settings, LogOut, Plus, MessageCircle, Heart, Search, ChevronDown, Gift, Users, Calendar, BookOpen, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -27,12 +27,20 @@ const privateNavigation = [
   { name: 'Comunidad', href: '/community' },
 ];
 
+// Opciones del menú "Más"
+const moreMenuOptions = [
+  { name: 'Aprende con Nosotros', href: '/education', icon: BookOpen },
+  { name: 'Eventos', href: '/events', icon: Calendar },
+];
+
 export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const companyDropdownRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { user, userType, logout, loading } = useAuth();
   const { unreadCount } = useNotifications();
@@ -46,16 +54,19 @@ export const Header: React.FC = () => {
       if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target as Node)) {
         setCompanyDropdownOpen(false);
       }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setMoreMenuOpen(false);
+      }
     };
 
-    if (profileMenuOpen || companyDropdownOpen) {
+    if (profileMenuOpen || companyDropdownOpen || moreMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [profileMenuOpen, companyDropdownOpen]);
+  }, [profileMenuOpen, companyDropdownOpen, moreMenuOpen]);
   
   // Navegación dinámica según el tipo de usuario
   const getPrivateNavigation = () => {
@@ -88,7 +99,7 @@ export const Header: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <Leaf className="h-8 w-8 text-green-600" />
+              <img src="/greenloop-logo.svg" alt="GreenLoop" className="h-8 w-8" />
               <span className="text-xl font-bold text-gray-900">GreenLoop</span>
             </Link>
           </div>
@@ -149,6 +160,44 @@ export const Header: React.FC = () => {
                 )}
               </div>
             )}
+            
+            {/* Menú "Más" */}
+            <div className="relative" ref={moreMenuRef}>
+              <button
+                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+                className={cn(
+                  'px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1',
+                  moreMenuOpen || ['/education', '/events'].some(path => pathname.startsWith(path))
+                    ? 'text-green-600 bg-green-50'
+                    : 'text-gray-700 hover:text-green-600 hover:bg-green-50'
+                )}
+              >
+                Más
+                <ChevronDown className={cn(
+                  'h-4 w-4 transition-transform',
+                  moreMenuOpen ? 'rotate-180' : ''
+                )} />
+              </button>
+              
+              {moreMenuOpen && (
+                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                  {moreMenuOptions.map((option) => {
+                    const Icon = option.icon;
+                    return (
+                      <Link
+                        key={option.name}
+                        href={option.href}
+                        onClick={() => setMoreMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors"
+                      >
+                        <Icon className="h-4 w-4" />
+                        {option.name}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Right side */}
@@ -293,6 +342,27 @@ export const Header: React.FC = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {/* Opciones del menú "Más" en móvil */}
+            {moreMenuOptions.map((option) => {
+              const Icon = option.icon;
+              return (
+                <Link
+                  key={option.name}
+                  href={option.href}
+                  className={cn(
+                    'block px-3 py-2 rounded-md text-base font-medium transition-colors',
+                    pathname === option.href
+                      ? 'text-green-600 bg-green-50'
+                      : 'text-gray-700 hover:text-green-600 hover:bg-green-50'
+                  )}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Icon className="h-4 w-4 inline mr-2" />
+                  {option.name}
+                </Link>
+              );
+            })}
             
             {/* Mobile user actions */}
             <div className="pt-4 border-t border-gray-200">

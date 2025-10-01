@@ -2,4 +2,11 @@ Iniciar el backend de greenloop
 cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 
 
 Iniciar el frontend de greenloop
-cd frontend && npm run dev 
+cd frontend && npm run dev
+
+
+-> Para las nuevas implementaciones de GreenLoop
+	1. Cambiar el logo de GreenLoop ya que el que tenemos se parece al del Spring Boot
+	2. Módulo de educación en intercambio sostenible, CO2, contaminación, reciclaje, calentamiento global, etc.
+	3. Módulo de creación y publicación de eventos, congresos, seminarios, encuentros, concursos, exposiciones, etc.
+	4. Módulo sala-live-chat para socialización e interacción entre usuarios (socializar y conocer personas)***

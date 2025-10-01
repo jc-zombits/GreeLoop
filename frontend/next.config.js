@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  trailingSlash: false,
+  output: 'standalone',
   images: {
     domains: ['localhost', '127.0.0.1'],
     formats: ['image/webp', 'image/avif'],

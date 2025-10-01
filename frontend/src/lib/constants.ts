@@ -46,6 +46,10 @@ export const API_ENDPOINTS = {
   NOTIFICATIONS: {
     LIST: '/api/v1/notifications',
     MARK_READ: '/api/v1/notifications/read'
+  },
+  STATS: {
+    EDUCATION_IMPACT: '/api/v1/stats/education-impact',
+    PLATFORM_METRICS: '/api/v1/stats/platform-metrics'
   }
 };
 

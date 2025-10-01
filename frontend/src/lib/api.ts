@@ -472,6 +472,12 @@ export const api = {
     updateSettings: (data: NotificationSettings) => apiClient.put(`${API_ENDPOINTS.NOTIFICATIONS.LIST}/settings`, data),
   },
 
+  // Estadísticas
+  stats: {
+    getEducationImpact: () => apiClient.get(API_ENDPOINTS.STATS.EDUCATION_IMPACT),
+    getPlatformMetrics: () => apiClient.get(API_ENDPOINTS.STATS.PLATFORM_METRICS),
+  },
+
   // Calificaciones
   ratings: {
     list: (params?: RatingParams) => {

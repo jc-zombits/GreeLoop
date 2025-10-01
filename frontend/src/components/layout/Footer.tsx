@@ -10,7 +10,7 @@ export const Footer: React.FC = () => {
           {/* Logo y descripción */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <Leaf className="h-8 w-8 text-green-400" />
+              <img src="/greenloop-logo.svg" alt="GreenLoop" className="h-8 w-8" />
               <span className="text-xl font-bold">GreenLoop</span>
             </div>
             <p className="text-gray-300 mb-4">
