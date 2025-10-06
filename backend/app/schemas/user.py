@@ -96,6 +96,9 @@ class UserUpdate(BaseModel):
     push_notifications: Optional[bool] = None
     sms_notifications: Optional[bool] = None
 
+    # Estado de la cuenta
+    is_active: Optional[bool] = None
+
 # Esquema para cambiar contraseña
 class UserPasswordChange(BaseModel):
     current_password: str
@@ -141,6 +144,8 @@ class UserResponse(BaseModel):
     is_active: bool
     email_verified: bool
     phone_verified: bool
+    # Rol
+    is_admin: bool = False
     
     # Estadísticas públicas
     reputation_score: float
@@ -216,6 +221,7 @@ class UserListItem(BaseModel):
     full_name: str
     avatar_url: Optional[str] = None
     city: Optional[str] = None
+    is_active: bool
     reputation_score: float
     total_exchanges: int
     

@@ -24,3 +24,26 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Tema verdoso suave para Admin */
+.admin-bg {
+  background-image: linear-gradient(to bottom, #ecfdf5, #d1fae5);
+}
+
+.card-verdoso {
+  background-color: #ecfdf5; /* emerald-50 */
+  border: 1px solid #a7f3d0; /* emerald-200 */
+}
+
+.card-verdoso-oscuro {
+  background-color: #a7f3d0; /* emerald-200 */
+  border: 1px solid #10b981; /* emerald-500 */
+}
+
+.texto-oscuro {
+  color: #111827; /* gray-900 */
+}
+
+.hover-verdoso-suave:hover {
+  background-color: rgba(209, 250, 229, 0.4);
+}

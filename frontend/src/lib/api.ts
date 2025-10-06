@@ -320,6 +320,19 @@ class ApiClient {
     return this.request<T>(endpoint, { method: 'DELETE' }, includeAuth);
   }
 
+  async patch<T>(endpoint: string, data?: unknown, includeAuth: boolean = true): Promise<T> {
+    const isFormData = data instanceof FormData;
+    return this.request<T>(
+      endpoint,
+      {
+        method: 'PATCH',
+        body: data ? (isFormData ? data : JSON.stringify(data)) : undefined,
+        headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+      },
+      includeAuth
+    );
+  }
+
   // Método especial para subir archivos
   async uploadFile<T>(
     endpoint: string,
@@ -493,6 +506,26 @@ export const api = {
     getPending: () => apiClient.get('/api/v1/ratings/pending'),
     getSettings: () => apiClient.get('/api/v1/ratings/settings'),
     updateSettings: (data: RatingSettings) => apiClient.put('/api/v1/ratings/settings', data),
+  },
+
+  // Administración
+  admin: {
+    users: {
+      list: (params?: { page?: number; page_size?: number; q?: string; is_active?: string }) => {
+        const query = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
+        return apiClient.get(`${API_ENDPOINTS.ADMIN.USERS}${query}`);
+      },
+      get: (id: string) => apiClient.get(`${API_ENDPOINTS.ADMIN.USERS}/${id}`),
+      update: (id: string, data: Partial<User>) => apiClient.put(`${API_ENDPOINTS.ADMIN.USERS}/${id}`, data),
+      delete: (id: string) => apiClient.delete(`${API_ENDPOINTS.ADMIN.USERS}/${id}`),
+    },
+    items: {
+      list: (params?: { page?: number; page_size?: number; status?: string; owner_id?: string }) => {
+        const query = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
+        return apiClient.get(`${API_ENDPOINTS.ADMIN.ITEMS}${query}`);
+      },
+      updateStatus: (id: string, status: string) => apiClient.put(`${API_ENDPOINTS.ADMIN.ITEMS}/${id}/status`, { status }),
+    },
   },
 };
 

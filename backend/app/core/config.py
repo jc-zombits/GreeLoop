@@ -49,8 +49,8 @@ class Settings(BaseSettings):
     
     # CORS Origins
     BACKEND_CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
+        "http://localhost:3009",
+        "http://127.0.0.1:3009",
         "http://localhost:8000",
         "http://localhost:8080",
     ]
@@ -65,6 +65,12 @@ class Settings(BaseSettings):
     # Pagination
     DEFAULT_PAGE_SIZE: int = 20
     MAX_PAGE_SIZE: int = 100
+
+    # Admin
+    ADMIN_EMAILS: List[str] = [
+        # Se deben sobreescribir vía entorno (.env)
+        "jucampuca@gmail.com"
+    ]
     
     class Config:
         case_sensitive = True

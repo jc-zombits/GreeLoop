@@ -54,6 +54,7 @@ export default function Settings() {
     preferences: {
       language: 'es',
       theme: 'light',
+      verdosoDarkMode: false,
       currency: 'EUR',
       distance: 'km',
       autoSave: true
@@ -81,6 +82,13 @@ export default function Settings() {
     // Aquí iría la lógica para guardar en el backend
     console.log('Saving settings:', settings);
     setHasChanges(false);
+  };
+
+  const applyVerdosoDarkMode = (enabled: boolean) => {
+    if (typeof document !== 'undefined') {
+      const body = document.body;
+      body.classList.toggle('admin-bg', enabled);
+    }
   };
 
   const renderNotifications = () => (
@@ -227,6 +235,20 @@ export default function Settings() {
             <option value="dark">Oscuro</option>
             <option value="auto">Automático</option>
           </select>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <input
+            id="verdosoDarkMode"
+            type="checkbox"
+            checked={settings.preferences.verdosoDarkMode}
+            onChange={(e) => {
+              handleSettingChange('preferences', 'verdosoDarkMode', e.target.checked);
+              applyVerdosoDarkMode(e.target.checked);
+            }}
+            className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+          />
+          <label htmlFor="verdosoDarkMode" className="text-sm text-gray-700">Modo verdoso oscuro (Admin)</label>
         </div>
         
         <div>

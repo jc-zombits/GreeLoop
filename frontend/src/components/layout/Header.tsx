@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Leaf, User, Bell, Settings, LogOut, Plus, MessageCircle, Heart, Search, ChevronDown, Gift, Users, Calendar, BookOpen, MoreHorizontal } from 'lucide-react';
+import { Menu, X, Leaf, User, Bell, Settings, LogOut, Plus, MessageCircle, Heart, Search, ChevronDown, Gift, Users, Calendar, BookOpen, MoreHorizontal, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -205,18 +205,29 @@ export const Header: React.FC = () => {
             {user ? (
               <>
                 {/* Botón dinámico según tipo de usuario */}
-                {userType === 'company' ? (
+                {userType === 'company' && (
                   <Link href="/exchanges">
                     <Button size="sm" className="bg-green-600 hover:bg-green-700">
                       <Search className="h-4 w-4 mr-1" />
                       <span className="hidden sm:inline">Intercambios</span>
                     </Button>
                   </Link>
-                ) : (
+                )}
+                {userType !== 'company' && (!isUser(user) || !user.is_admin) && (
                   <Link href="/items/new">
                     <Button size="sm" className="bg-green-600 hover:bg-green-700">
                       <Plus className="h-4 w-4 mr-1" />
                       <span className="hidden sm:inline">Publicar</span>
+                    </Button>
+                  </Link>
+                )}
+
+                {/* Botón Admin visible solo para usuarios administradores */}
+                {userType !== 'company' && isUser(user) && user.is_admin && (
+                  <Link href="/admin">
+                    <Button size="sm" variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
+                      <Shield className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Admin</span>
                     </Button>
                   </Link>
                 )}

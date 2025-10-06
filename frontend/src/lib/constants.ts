@@ -8,6 +8,10 @@ export const API_ENDPOINTS = {
     ME: '/api/v1/auth/me',
     REFRESH: '/api/v1/auth/refresh'
   },
+  ADMIN: {
+    USERS: '/api/v1/admin/users',
+    ITEMS: '/api/v1/admin/items'
+  },
   COMPANY_AUTH: {
     LOGIN: '/api/v1/company-auth/login',
     REGISTER: '/api/v1/company-auth/register',

@@ -15,6 +15,8 @@ export interface User {
   created_at: string;
   last_login?: string;
   is_active: boolean;
+  // Admin flag provided by backend /auth/me
+  is_admin?: boolean;
   email_verified: boolean;
   phone_verified: boolean;
   reputation_score: number;

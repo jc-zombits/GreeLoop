@@ -9,6 +9,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   userType: 'user' | 'company' | null;
+  isAdmin: boolean;
   login: (credentials: LoginForm, type?: 'user' | 'company') => Promise<void>;
   register: (userData: RegisterForm | CompanyRegisterForm, type?: 'user' | 'company') => Promise<void>;
   logout: () => void;
@@ -284,6 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     error,
     userType,
+    isAdmin: !!(user && (user as User).is_admin && userType === 'user'),
     login,
     register,
     logout,

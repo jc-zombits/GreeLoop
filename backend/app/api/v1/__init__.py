@@ -12,6 +12,8 @@ from .community import router as community_router
 from .company_auth import router as company_auth_router
 from .contributions import router as contributions_router
 from .stats import router as stats_router
+from .admin import router as admin_router
+from .admin import router as admin_router
 
 api_router = APIRouter()
 
@@ -86,4 +88,16 @@ api_router.include_router(
     stats_router,
     prefix="/stats",
     tags=["statistics"]
+)
+
+api_router.include_router(
+    admin_router,
+    prefix="/admin",
+    tags=["admin"]
+)
+
+api_router.include_router(
+    admin_router,
+    prefix="/admin",
+    tags=["admin"]
 )

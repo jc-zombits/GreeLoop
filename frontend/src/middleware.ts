@@ -11,7 +11,8 @@ const protectedRoutes = [
   '/messages',
   '/notifications',
   '/profile',
-  '/settings'
+  '/settings',
+  '/admin'
 ];
 
 // Rutas que solo pueden acceder usuarios no autenticados

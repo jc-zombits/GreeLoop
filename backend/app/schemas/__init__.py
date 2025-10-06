@@ -235,6 +235,11 @@ from .community_post import (
     CommentResponse
 )
 
+# Esquemas de administración
+from .admin import (
+    AdminRoleUpdate,
+)
+
 __all__ = [
     # Auth
     "LoginRequest",
@@ -450,4 +455,6 @@ __all__ = [
     "PostResponse",
     "LikeResponse",
     "CommentResponse",
+    # Admin
+    "AdminRoleUpdate",
 ]

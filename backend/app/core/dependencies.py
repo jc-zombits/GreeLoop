@@ -7,6 +7,8 @@ from uuid import UUID
 from app.core.database import get_db
 from app.core.security import verify_token, AuthenticationError
 from app.models.user import User
+from app.models.admin_user import AdminUser
+from app.core.config import settings
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(
@@ -109,12 +111,42 @@ async def get_optional_current_user(
     except Exception:
         return None
 
-def require_admin(
+async def require_admin(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> User:
+    """Requerir que el usuario actual sea administrador
+    Se valida por:
+    - Correo en la lista de propietarios/admins (ADMIN_EMAILS)
+    - Registro en la tabla AdminUser
+    """
+    admin_emails = set(email.strip().lower() for email in settings.ADMIN_EMAILS)
+    if current_user.email and current_user.email.lower() in admin_emails:
+        return current_user
+
+    # Verificar en la tabla de administradores adicionales
+    from sqlalchemy import select
+    result = await db.execute(select(AdminUser).where(AdminUser.user_id == current_user.id))
+    admin_row = result.scalar_one_or_none()
+    if admin_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requieren privilegios de administrador"
+        )
+    return current_user
+
+def require_owner_admin(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    """Requerir que el usuario actual sea administrador"""
-    # Por ahora, todos los usuarios pueden ser admin
-    # En el futuro se puede agregar un campo 'is_admin' al modelo User
+    """Requerir que el usuario sea el propietario (dueño) definido en ADMIN_EMAILS.
+    Solo usuarios con correo en ADMIN_EMAILS pasan esta verificación.
+    """
+    admin_emails = set(email.strip().lower() for email in settings.ADMIN_EMAILS)
+    if not current_user.email or current_user.email.lower() not in admin_emails:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requieren privilegios de propietario"
+        )
     return current_user
 
 def get_pagination_params(

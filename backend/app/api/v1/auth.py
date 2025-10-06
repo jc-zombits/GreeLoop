@@ -16,6 +16,8 @@ from app.core.security import (
     get_password_hash
 )
 from app.core.dependencies import get_current_user, get_optional_current_user
+from app.core.config import settings
+from app.models.admin_user import AdminUser
 from app.models.user import User
 from app.models.user_session import UserSession
 from app.schemas.auth import (
@@ -342,7 +344,53 @@ async def get_current_user_info(
     current_user: User = Depends(get_current_user)
 ):
     """Obtener información del usuario actual"""
-    return current_user
+    # Calcular flag de administrador
+    admin_emails = set(email.strip().lower() for email in settings.ADMIN_EMAILS)
+    is_admin = False
+    try:
+        if current_user.email and current_user.email.lower() in admin_emails:
+            is_admin = True
+    except Exception:
+        pass
+
+    # Verificar admin adicional por tabla AdminUser
+    try:
+        from sqlalchemy import select
+        # Nota: no tenemos sesión aquí, pero el objeto current_user se devolverá con is_admin
+        # Para evitar consultas aquí, se puede calcular en dependencia; aquí hacemos una comprobación simple usando relación
+        # Si la relación existe cargada por lazy, intentamos usarla
+        if hasattr(current_user, "admin_role") and current_user.admin_role:
+            is_admin = True
+    except Exception:
+        pass
+
+    # Mapear a dict para sobrescribir is_admin si Pydantic no lo toma automáticamente
+    user_dict = {
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "username": current_user.username,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+        "full_name": current_user.full_name,
+        "phone": current_user.phone,
+        "bio": current_user.bio,
+        "avatar_url": current_user.avatar_url,
+        "city": current_user.city,
+        "state": current_user.state,
+        "country": current_user.country,
+        "is_active": current_user.is_active,
+        "email_verified": current_user.email_verified,
+        "phone_verified": current_user.phone_verified,
+        "reputation_score": current_user.reputation_score,
+        "total_exchanges": current_user.total_exchanges,
+        "successful_exchanges": current_user.successful_exchanges,
+        "success_rate": current_user.success_rate,
+        "created_at": current_user.created_at,
+        "last_login": current_user.last_login,
+        "is_admin": is_admin,
+    }
+
+    return user_dict
 
 
 @router.get("/status", response_model=AuthStatusResponse)
