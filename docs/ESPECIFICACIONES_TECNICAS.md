@@ -60,6 +60,9 @@ greenloop/
 │   │   ├── store/
 │   │   ├── utils/
 │   │   └── types/
+│   │       ├── auth.ts
+│   │       ├── item.ts
+│   │       └── event.ts ✅ **IMPLEMENTADO**
 │   ├── public/
 │   ├── package.json
 │   ├── next.config.js
@@ -847,6 +850,549 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onFavorite }) => {
 }
 
 export default ItemCard
+```
+
+#### src/components/EventCard.tsx ✅ **IMPLEMENTADO**
+```typescript
+import React from 'react'
+import { Card, Tag, Badge } from 'antd'
+import { CalendarOutlined, EnvironmentOutlined, UserOutlined, DollarOutlined } from '@ant-design/icons'
+import Link from 'next/link'
+import { Event } from '@/types/event'
+
+interface EventCardProps {
+  event: Event
+}
+
+const EventCard: React.FC<EventCardProps> = ({ event }) => {
+  const { Meta } = Card
+
+  const getCategoryColor = (category: string) => {
+    const colors = {
+      'Intercambio de Objetos': 'blue',
+      'Taller de Reparación': 'green',
+      'Mercado Verde': 'orange',
+      'Educación Ambiental': 'purple',
+      'Limpieza Comunitaria': 'cyan',
+      'Otro': 'default'
+    }
+    return colors[category as keyof typeof colors] || 'default'
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('es-ES', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const formatTime = (timeString: string) => {
+    return timeString.slice(0, 5) // HH:MM format
+  }
+
+  return (
+    <Card
+      hoverable
+      className="w-full max-w-sm mx-auto shadow-md hover:shadow-lg transition-shadow"
+      cover={
+        <div className="relative h-48 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+          <div className="text-white text-center">
+            <CalendarOutlined className="text-4xl mb-2" />
+            <div className="text-lg font-semibold">{formatDate(event.date)}</div>
+            <div className="text-sm">{formatTime(event.time)}</div>
+          </div>
+          <div className="absolute top-2 right-2">
+            <Tag color={getCategoryColor(event.category)}>
+              {event.category}
+            </Tag>
+          </div>
+          {event.eventType === 'paid' && (
+            <div className="absolute top-2 left-2">
+              <Badge count={<DollarOutlined />} style={{ backgroundColor: '#52c41a' }} />
+            </div>
+          )}
+        </div>
+      }
+    >
+      <Meta
+        title={
+          <div className="flex justify-between items-start">
+            <span className="font-semibold text-gray-800 truncate">
+              {event.title}
+            </span>
+          </div>
+        }
+        description={
+          <div className="space-y-2">
+            <p className="text-gray-600 text-sm line-clamp-2">
+              {event.description}
+            </p>
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center">
+                <EnvironmentOutlined className="mr-1" />
+                <span>{event.location}</span>
+              </div>
+              <div className="flex items-center">
+                <UserOutlined className="mr-1" />
+                <span>{event.capacity} personas</span>
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <Tag color={event.eventType === 'free' ? 'green' : 'blue'}>
+                {event.eventType === 'free' ? 'Gratuito' : 'De pago'}
+              </Tag>
+              <Link href={`/events/${event.id}`}>
+                <span className="text-blue-500 hover:text-blue-700 text-sm">Ver detalles</span>
+              </Link>
+            </div>
+          </div>
+        }
+      />
+    </Card>
+  )
+}
+
+export default EventCard
+```
+
+#### src/components/EventForm.tsx ✅ **IMPLEMENTADO**
+```typescript
+import React from 'react'
+import { Form, Input, Select, DatePicker, TimePicker, InputNumber, Radio, Button, Card } from 'antd'
+import { CalendarOutlined, EnvironmentOutlined, UserOutlined, DollarOutlined, FileTextOutlined, TagOutlined } from '@ant-design/icons'
+import { EventFormData } from '@/types/event'
+
+const { TextArea } = Input
+const { Option } = Select
+
+interface EventFormProps {
+  onSubmit: (data: EventFormData) => void
+  loading?: boolean
+}
+
+const EventForm: React.FC<EventFormProps> = ({ onSubmit, loading = false }) => {
+  const [form] = Form.useForm()
+
+  const categories = [
+    'Intercambio de Objetos',
+    'Taller de Reparación',
+    'Mercado Verde',
+    'Educación Ambiental',
+    'Limpieza Comunitaria',
+    'Otro'
+  ]
+
+  const handleSubmit = (values: any) => {
+    const formData: EventFormData = {
+      title: values.title,
+      description: values.description,
+      date: values.date.format('YYYY-MM-DD'),
+      time: values.time.format('HH:mm'),
+      location: values.location,
+      category: values.category,
+      capacity: values.capacity,
+      eventType: values.eventType
+    }
+    onSubmit(formData)
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <Card title="Crear Nuevo Evento" className="shadow-lg">
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          className="space-y-4"
+        >
+          {/* Información Básica */}
+          <Card type="inner" title={<><FileTextOutlined className="mr-2" />Información Básica</>}>
+            <Form.Item
+              name="title"
+              label="Título del Evento"
+              rules={[{ required: true, message: 'Por favor ingresa el título del evento' }]}
+            >
+              <Input placeholder="Ej: Intercambio de libros en el parque" />
+            </Form.Item>
+
+            <Form.Item
+              name="description"
+              label="Descripción"
+              rules={[{ required: true, message: 'Por favor ingresa una descripción' }]}
+            >
+              <TextArea 
+                rows={4} 
+                placeholder="Describe tu evento, qué actividades se realizarán, qué pueden traer los participantes, etc."
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="category"
+              label="Categoría"
+              rules={[{ required: true, message: 'Por favor selecciona una categoría' }]}
+            >
+              <Select placeholder="Selecciona la categoría del evento">
+                {categories.map(category => (
+                  <Option key={category} value={category}>
+                    <TagOutlined className="mr-2" />
+                    {category}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Card>
+
+          {/* Fecha y Hora */}
+          <Card type="inner" title={<><CalendarOutlined className="mr-2" />Fecha y Hora</>}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Form.Item
+                name="date"
+                label="Fecha"
+                rules={[{ required: true, message: 'Por favor selecciona la fecha' }]}
+              >
+                <DatePicker 
+                  className="w-full"
+                  placeholder="Selecciona la fecha"
+                  format="DD/MM/YYYY"
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="time"
+                label="Hora"
+                rules={[{ required: true, message: 'Por favor selecciona la hora' }]}
+              >
+                <TimePicker 
+                  className="w-full"
+                  placeholder="Selecciona la hora"
+                  format="HH:mm"
+                />
+              </Form.Item>
+            </div>
+          </Card>
+
+          {/* Ubicación */}
+          <Card type="inner" title={<><EnvironmentOutlined className="mr-2" />Ubicación</>}>
+            <Form.Item
+              name="location"
+              label="Dirección o lugar del evento"
+              rules={[{ required: true, message: 'Por favor ingresa la ubicación' }]}
+            >
+              <Input placeholder="Ej: Parque Central, Calle 123, Ciudad" />
+            </Form.Item>
+          </Card>
+
+          {/* Capacidad y Precio */}
+          <Card type="inner" title={<><UserOutlined className="mr-2" />Capacidad y Precio</>}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Form.Item
+                name="capacity"
+                label="Capacidad Máxima"
+                rules={[{ required: true, message: 'Por favor ingresa la capacidad máxima' }]}
+              >
+                <InputNumber 
+                  className="w-full"
+                  min={1}
+                  max={1000}
+                  placeholder="Número de participantes"
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="eventType"
+                label="Tipo de Evento"
+                rules={[{ required: true, message: 'Por favor selecciona el tipo de evento' }]}
+              >
+                <Radio.Group className="w-full">
+                  <Radio.Button value="free" className="w-1/2 text-center">
+                    <span className="text-green-600">Gratuito</span>
+                    <div className="text-xs text-gray-500">Sin costo para los participantes</div>
+                  </Radio.Button>
+                  <Radio.Button value="paid" className="w-1/2 text-center">
+                    <DollarOutlined className="text-blue-600" />
+                    <span className="text-blue-600 ml-1">De pago</span>
+                    <div className="text-xs text-gray-500">Requiere pago para participar</div>
+                  </Radio.Button>
+                </Radio.Group>
+              </Form.Item>
+            </div>
+          </Card>
+
+          <Form.Item>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              loading={loading}
+              size="large"
+              className="w-full bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+            >
+              Crear Evento
+            </Button>
+          </Form.Item>
+        </Form>
+      </Card>
+    </div>
+  )
+}
+
+export default EventForm
+```
+
+### Tipos TypeScript
+
+#### src/types/event.ts ✅ **IMPLEMENTADO**
+```typescript
+export interface Event {
+  id: string
+  title: string
+  description: string
+  date: string
+  time: string
+  location: string
+  category: string
+  capacity: number
+  eventType: 'free' | 'paid'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface EventFormData {
+  title: string
+  description: string
+  date: string
+  time: string
+  location: string
+  category: string
+  capacity: number | string
+  eventType: 'free' | 'paid'
+}
+
+export interface EventFilters {
+  category?: string
+  eventType?: 'free' | 'paid'
+  search?: string
+}
+```
+
+### Páginas Implementadas
+
+#### src/app/events/page.tsx ✅ **IMPLEMENTADO**
+```typescript
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import { Input, Select, Card, Row, Col, Empty, Spin } from 'antd'
+import { SearchOutlined, PlusOutlined } from '@ant-design/icons'
+import Link from 'next/link'
+import EventCard from '@/components/EventCard'
+import { Event, EventFilters } from '@/types/event'
+
+const { Option } = Select
+
+const EventsPage: React.FC = () => {
+  const [events, setEvents] = useState<Event[]>([])
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>([])
+  const [filters, setFilters] = useState<EventFilters>({})
+  const [loading, setLoading] = useState(true)
+
+  const categories = [
+    'Intercambio de Objetos',
+    'Taller de Reparación',
+    'Mercado Verde',
+    'Educación Ambiental',
+    'Limpieza Comunitaria',
+    'Otro'
+  ]
+
+  useEffect(() => {
+    loadEvents()
+  }, [])
+
+  useEffect(() => {
+    applyFilters()
+  }, [events, filters])
+
+  const loadEvents = () => {
+    try {
+      const savedEvents = localStorage.getItem('events')
+      if (savedEvents) {
+        const parsedEvents = JSON.parse(savedEvents)
+        setEvents(parsedEvents)
+      }
+    } catch (error) {
+      console.error('Error loading events:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const applyFilters = () => {
+    let filtered = [...events]
+
+    if (filters.category) {
+      filtered = filtered.filter(event => event.category === filters.category)
+    }
+
+    if (filters.eventType) {
+      filtered = filtered.filter(event => event.eventType === filters.eventType)
+    }
+
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase()
+      filtered = filtered.filter(event =>
+        event.title.toLowerCase().includes(searchLower) ||
+        event.description.toLowerCase().includes(searchLower) ||
+        event.location.toLowerCase().includes(searchLower)
+      )
+    }
+
+    setFilteredEvents(filtered)
+  }
+
+  const handleFilterChange = (key: keyof EventFilters, value: any) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }))
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Spin size="large" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Eventos Comunitarios</h1>
+          <p className="text-gray-600">Descubre y participa en eventos de intercambio y sostenibilidad</p>
+        </div>
+        <Link href="/events/create">
+          <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors">
+            <PlusOutlined />
+            Crear Evento
+          </button>
+        </Link>
+      </div>
+
+      <Card className="mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Input
+            placeholder="Buscar eventos..."
+            prefix={<SearchOutlined />}
+            value={filters.search}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
+            allowClear
+          />
+          
+          <Select
+            placeholder="Filtrar por categoría"
+            value={filters.category}
+            onChange={(value) => handleFilterChange('category', value)}
+            allowClear
+          >
+            {categories.map(category => (
+              <Option key={category} value={category}>
+                {category}
+              </Option>
+            ))}
+          </Select>
+
+          <Select
+            placeholder="Tipo de evento"
+            value={filters.eventType}
+            onChange={(value) => handleFilterChange('eventType', value)}
+            allowClear
+          >
+            <Option value="free">Gratuito</Option>
+            <Option value="paid">De pago</Option>
+          </Select>
+        </div>
+      </Card>
+
+      {filteredEvents.length === 0 ? (
+        <Empty
+          description="No se encontraron eventos"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      ) : (
+        <Row gutter={[24, 24]}>
+          {filteredEvents.map(event => (
+            <Col key={event.id} xs={24} sm={12} lg={8} xl={6}>
+              <EventCard event={event} />
+            </Col>
+          ))}
+        </Row>
+      )}
+    </div>
+  )
+}
+
+export default EventsPage
+```
+
+#### src/app/events/create/page.tsx ✅ **IMPLEMENTADO**
+```typescript
+'use client'
+
+import React, { useState } from 'react'
+import { message } from 'antd'
+import { useRouter } from 'next/navigation'
+import EventForm from '@/components/EventForm'
+import { EventFormData, Event } from '@/types/event'
+
+const CreateEventPage: React.FC = () => {
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  const handleSubmit = async (formData: EventFormData) => {
+    setLoading(true)
+    
+    try {
+      const newEvent: Event = {
+        id: Date.now().toString(),
+        ...formData,
+        capacity: typeof formData.capacity === 'string' ? parseInt(formData.capacity) || 0 : formData.capacity,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      const existingEvents = JSON.parse(localStorage.getItem('events') || '[]')
+      const updatedEvents = [...existingEvents, newEvent]
+      localStorage.setItem('events', JSON.stringify(updatedEvents))
+
+      message.success('¡Evento creado exitosamente!')
+      router.push('/events')
+    } catch (error) {
+      console.error('Error creating event:', error)
+      message.error('Error al crear el evento. Por favor intenta nuevamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Crear Nuevo Evento</h1>
+          <p className="text-gray-600">Organiza un evento comunitario de intercambio y sostenibilidad</p>
+        </div>
+        
+        <EventForm onSubmit={handleSubmit} loading={loading} />
+      </div>
+    </div>
+  )
+}
+
+export default CreateEventPage
 ```
 
 ## Configuración de Docker

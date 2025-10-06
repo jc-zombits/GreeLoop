@@ -64,6 +64,48 @@ flowchart TD
     L --> C
 ```
 
+### 3.1. Flujo de Exploración de Eventos ✅ **IMPLEMENTADO**
+
+```mermaid
+flowchart TD
+    A[Dashboard] --> B[Explorar Eventos]
+    B --> C[Lista de Eventos]
+    C --> D[Aplicar Filtros]
+    D --> E[Filtrar por Categoría]
+    E --> F[Filtrar por Tipo]
+    F --> G[Buscar por Texto]
+    G --> H[Ver Eventos Filtrados]
+    H --> I[Seleccionar Evento]
+    I --> J[Ver Detalle del Evento]
+    J --> K{¿Interesado?}
+    K -->|Sí| L[Registrarse al Evento]
+    K -->|No| M[Volver a Lista]
+    L --> N[Confirmación de Registro]
+    M --> C
+```
+
+### 3.2. Flujo de Creación de Eventos ✅ **IMPLEMENTADO**
+
+```mermaid
+flowchart TD
+    A[Dashboard] --> B["Botón 'Crear Evento'"]
+    B --> C[Formulario de Evento]
+    C --> D[Información Básica]
+    D --> E[Título y Descripción]
+    E --> F[Fecha y Hora]
+    F --> G[Ubicación]
+    G --> H[Categoría]
+    H --> I[Capacidad y Precio]
+    I --> J[Tipo de Evento]
+    J --> K[Vista Previa]
+    K --> L{¿Confirmar creación?}
+    L -->|Sí| M[Guardar Evento]
+    L -->|No| C
+    M --> N[Evento Creado]
+    N --> O[Notificación de Éxito]
+    O --> P[Ver en Lista de Eventos]
+```
+
 ### 4. Flujo de Intercambio Completo
 
 ```mermaid
@@ -212,7 +254,12 @@ flowchart TD
 ├── Explorar
 │   ├── Lista de objetos
 │   ├── Vista de mapa
-│   └── Filtros y búsqueda
+│   ├── Filtros y búsqueda
+│   └── Eventos ✅ **IMPLEMENTADO**
+│       ├── Lista de eventos
+│       ├── Filtros por categoría y tipo
+│       ├── Búsqueda de eventos
+│       └── Crear nuevo evento ✅ **IMPLEMENTADO**
 │
 ├── Mis Objetos
 │   ├── Objetos publicados

@@ -76,7 +76,52 @@ Desarrollar una versión mínima viable de la plataforma de trueque sostenible q
 - [ ] Intercambiador confiable (4.5+ estrellas)
 - [ ] Eco-warrior (20+ intercambios)
 
-### 5. Funcionalidades Geográficas
+### 5. Gestión de Eventos ✅ **IMPLEMENTADO**
+
+#### Creación de Eventos
+- [x] Formulario completo de creación de eventos
+- [x] Información básica (título, descripción, organizador)
+- [x] Categorización de eventos:
+  - Conferencia
+  - Congreso
+  - Seminario
+  - Reunión
+  - Ponencia
+  - Concurso
+  - Exposición
+  - Encuentro
+- [x] Gestión de fecha y hora
+- [x] Modalidad (presencial/virtual)
+- [x] Gestión de ubicación/enlace virtual
+- [x] Configuración de capacidad máxima
+- [x] Sistema de precios (gratuito/de pago)
+- [x] Selector de moneda (COP/USD)
+- [x] Sistema de etiquetas (tags)
+- [x] Validaciones de formulario
+- [x] Estados de carga y feedback
+
+#### Visualización y Gestión de Eventos
+- [x] Página de listado de eventos
+- [x] Sistema de búsqueda por texto
+- [x] Filtros por categoría de evento
+- [x] Filtros por modalidad (presencial/virtual)
+- [x] Filtros por precio (gratuito/de pago)
+- [x] Ordenamiento por fecha y relevancia
+- [x] Cards responsivas con información completa
+- [x] Indicadores visuales por tipo de evento
+- [x] Estados vacíos informativos
+- [x] Navegación fluida entre páginas
+- [x] Persistencia en localStorage
+- [x] Actualización en tiempo real
+
+#### Componentes UI Desarrollados
+- [x] Componente Textarea reutilizable
+- [x] Mejoras en contraste y accesibilidad
+- [x] Diseño responsive optimizado
+- [x] Validación de campos numéricos
+- [x] Manejo de estados de error
+
+### 6. Funcionalidades Geográficas
 
 #### Mapa Básico
 - [ ] Visualización de objetos en mapa
@@ -84,7 +129,7 @@ Desarrollar una versión mínima viable de la plataforma de trueque sostenible q
 - [ ] Geolocalización del usuario
 - [ ] Marcadores por categoría
 
-### 6. Notificaciones Básicas
+### 7. Notificaciones Básicas
 
 #### Tipos de Notificación
 - [ ] Nueva solicitud de intercambio
@@ -140,6 +185,18 @@ DELETE /api/items/{item_id}
 POST /api/items/{item_id}/images
 ```
 
+#### Eventos
+```
+GET /api/events
+POST /api/events
+GET /api/events/{event_id}
+PUT /api/events/{event_id}
+DELETE /api/events/{event_id}
+GET /api/events/categories
+POST /api/events/{event_id}/register
+DELETE /api/events/{event_id}/register
+```
+
 #### Intercambios
 ```
 GET /api/exchanges
@@ -164,6 +221,8 @@ POST /api/exchanges/{exchange_id}/messages
 
 #### Privadas
 - [ ] Dashboard/Home
+- [x] Explorar eventos ✅ **IMPLEMENTADO**
+- [x] Crear evento ✅ **IMPLEMENTADO**
 - [ ] Explorar objetos
 - [ ] Detalle de objeto
 - [ ] Mis objetos
@@ -178,6 +237,7 @@ POST /api/exchanges/{exchange_id}/messages
 #### Tablas Principales
 - users
 - items
+- events ✅ **IMPLEMENTADO (localStorage)**
 - exchanges
 - messages
 - ratings
@@ -189,11 +249,13 @@ POST /api/exchanges/{exchange_id}/messages
 ### Funcionales
 1. Un usuario puede registrarse y hacer login
 2. Un usuario puede publicar un objeto con fotos
-3. Un usuario puede buscar objetos por categoría y ubicación
-4. Un usuario puede solicitar un intercambio
-5. Los usuarios pueden chatear durante un intercambio
-6. Los usuarios pueden completar un intercambio y calificarse
-7. Los objetos se muestran en un mapa básico
+3. ✅ **Un usuario puede crear eventos con información completa** ✅ **IMPLEMENTADO**
+4. ✅ **Un usuario puede explorar y filtrar eventos** ✅ **IMPLEMENTADO**
+5. Un usuario puede buscar objetos por categoría y ubicación
+6. Un usuario puede solicitar un intercambio
+7. Los usuarios pueden chatear durante un intercambio
+8. Los usuarios pueden completar un intercambio y calificarse
+9. Los objetos se muestran en un mapa básico
 
 ### No Funcionales
 1. Tiempo de respuesta < 2 segundos para búsquedas

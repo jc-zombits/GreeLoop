@@ -46,6 +46,13 @@ const EducationPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const scrollToModules = () => {
+    const el = document.getElementById('modules');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   // Función para obtener el icono correspondiente
   const getIcon = (iconName: string) => {
     const icons: { [key: string]: React.ComponentType<{ className?: string }> } = {
@@ -161,6 +168,19 @@ const EducationPage: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    // Leer módulos completados desde localStorage
+    try {
+      const saved = localStorage.getItem('education_completed_modules');
+      if (saved) {
+        const arr = JSON.parse(saved) as string[];
+        setCompletedModules(arr);
+      }
+    } catch (e) {
+      // Ignorar errores de parsing
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -181,6 +201,7 @@ const EducationPage: React.FC = () => {
             <Button 
               size="lg" 
               className="bg-white text-green-700 hover:bg-green-50 font-semibold px-8 py-3"
+              onClick={scrollToModules}
             >
               Comenzar Aprendizaje
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -239,7 +260,7 @@ const EducationPage: React.FC = () => {
       </div>
 
       {/* Learning Modules Section */}
-      <div className="py-16 bg-gray-50">
+      <div className="py-16 bg-gray-50" id="modules">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
