@@ -155,8 +155,8 @@ const EducationPage: React.FC = () => {
       title: 'Comunidad Sostenible',
       description: 'Cómo crear y participar en comunidades que promuevan la sostenibilidad.',
       icon: Users,
-      duration: '30 min',
-      level: 'Principiante',
+      duration: '40 min',
+      level: 'Intermedio',
       color: 'bg-pink-500',
       topics: ['Colaboración', 'Iniciativas locales', 'Redes de intercambio']
     }

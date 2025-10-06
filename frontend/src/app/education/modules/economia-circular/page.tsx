@@ -212,14 +212,15 @@ const Page: React.FC = () => {
                       <p className="font-medium text-gray-900 mb-2">{i + 1}. {q.question}</p>
                       <div className="space-y-2">
                         {q.options.map((opt, j) => (
-                          <label key={j} className="flex items-center gap-2">
+                          <label key={j} className="flex items-center gap-2 text-gray-900 hover:bg-gray-50 rounded-md px-2 py-1">
                             <input
                               type="radio"
                               name={`q-${i}`}
                               checked={answers[i] === j}
                               onChange={() => handleAnswer(i, j)}
+                              className="accent-green-600 focus:outline-none focus:ring-2 focus:ring-green-600"
                             />
-                            <span className="text-gray-700">{opt}</span>
+                            <span className="text-gray-900">{opt}</span>
                           </label>
                         ))}
                       </div>

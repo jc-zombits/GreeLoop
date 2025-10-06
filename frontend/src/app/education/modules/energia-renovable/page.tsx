@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { BadgeCheck, Flame, Leaf, Gauge, ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
+import { Sun, Wind, Battery, ArrowLeft, BadgeCheck, CheckCircle } from 'lucide-react';
 
 interface QuizQuestion {
   question: string;
@@ -18,80 +18,55 @@ interface Flashcard {
   definition: string;
 }
 
-const VIDEO_EMBED = 'https://www.youtube.com/embed/KJgGfY5PACM';
-
 const Page: React.FC = () => {
   const objectives = [
-    'Entender qué es la huella de carbono y cómo se mide',
-    'Conocer las fuentes de emisiones directas e indirectas (alcances 1, 2 y 3)',
-    'Identificar estrategias para reducir y compensar emisiones',
-    'Explorar herramientas para el cálculo y reporte',
+    'Conocer las principales fuentes de energía renovable (solar, eólica, hidráulica)',
+    'Identificar oportunidades de eficiencia energética en el hogar',
+    'Comprender el autoconsumo y su impacto en emisiones y costes',
+    'Aplicar acciones prácticas de ahorro y uso eficiente de energía',
   ];
 
   const resources = [
-    {
-      title: 'Huella de Carbono – Guía básica (Ministerio de Transición Ecológica, España)',
-      url: 'https://www.miteco.gob.es/es/cambio-climatico/temas/mitigacion-politicas-y-medidas/huella-de-carbono.html',
-    },
-    {
-      title: 'GHG Protocol – Corporate Standard',
-      url: 'https://ghgprotocol.org/corporate-standard',
-    },
-    {
-      title: 'ISO 14064 – Medición y reporte de GEI',
-      url: 'https://www.iso.org/standard/66454.html',
-    },
+    { title: 'ODS 7: Energía asequible y no contaminante (ONU)', url: 'https://www.un.org/sustainabledevelopment/es/energy/' },
+    { title: 'IDAE: Guías y eficiencia energética', url: 'https://www.idae.es/publicaciones' },
+    { title: 'Autoconsumo fotovoltaico: recursos informativos', url: 'https://www.ree.es/es/ambitos/energia/energia-solar' },
   ];
 
   const quiz: QuizQuestion[] = [
     {
-      question: 'La huella de carbono mide…',
-      options: [
-        'El consumo de agua de una organización',
-        'Las emisiones de GEI asociadas a actividades y productos',
-        'La biodiversidad de un territorio',
-        'La cantidad de residuos sólidos generados',
-      ],
+      question: '¿Cuál de las siguientes es una fuente renovable?',
+      options: ['Carbón', 'Solar', 'Diésel', 'Gas natural'],
       correctIndex: 1,
+      explanation: 'La energía solar es renovable; carbón, diésel y gas natural son fósiles.',
     },
     {
-      question: 'El alcance 1 se refiere a…',
+      question: 'El autoconsumo fotovoltaico permite…',
       options: [
-        'Emisiones directas controladas por la organización (combustión en calderas, vehículos)',
-        'Emisiones por electricidad adquirida',
-        'Emisiones de la cadena de valor (proveedores, uso de producto)',
-        'Emisiones por viajes aéreos de terceros',
+        'Generar electricidad propia y reducir la factura',
+        'Aumentar el consumo sin cambios',
+        'Depender más de combustibles fósiles',
+        'Eliminar la necesidad de eficiencia',
       ],
       correctIndex: 0,
+      explanation: 'El autoconsumo genera electricidad local y reduce costes y emisiones.',
     },
     {
-      question: 'Una estrategia efectiva para reducir emisiones es…',
-      options: [
-        'Incrementar consumo de combustibles fósiles',
-        'Mejorar eficiencia energética y electrificar procesos con renovables',
-        'Aumentar la obsolescencia de equipos',
-        'Ignorar datos de proveedores',
-      ],
+      question: 'Una medida de eficiencia energética en casa es…',
+      options: ['Usar bombillas incandescentes', 'Aislar mejor y cambiar a LED', 'Dejar aparatos en standby', 'Abrir ventanas para calentar'],
       correctIndex: 1,
     },
     {
-      question: 'La compensación de carbono…',
-      options: [
-        'Sustituye la reducción de emisiones',
-        'Complementa la reducción con proyectos certificados (reforestación, captura)',
-        'No tiene estándares reconocidos',
-        'Se basa en emisiones de alcance 4',
-      ],
-      correctIndex: 1,
+      question: 'La energía eólica se obtiene a partir de…',
+      options: ['Movimiento del agua', 'Calor del subsuelo', 'Viento que mueve aerogeneradores', 'Radiación solar directa'],
+      correctIndex: 2,
     },
   ];
 
   const flashcards: Flashcard[] = [
-    { term: 'GEI', definition: 'Gases de Efecto Invernadero: CO2, CH4, N2O, etc.' },
-    { term: 'Alcance 1', definition: 'Emisiones directas de fuentes controladas por la organización.' },
-    { term: 'Alcance 2', definition: 'Emisiones indirectas por electricidad/energía comprada.' },
-    { term: 'Alcance 3', definition: 'Emisiones indirectas de la cadena de valor.' },
-    { term: 'Factor de emisión', definition: 'Relación entre actividad y emisiones (p.ej., kg CO2e/kWh).'},
+    { term: 'Autoconsumo', definition: 'Generación y consumo local de electricidad (p. ej., solar fotovoltaica).' },
+    { term: 'Eficiencia energética', definition: 'Usar menos energía para obtener el mismo servicio (iluminación, climatización, etc.).' },
+    { term: 'Mix energético', definition: 'Composición de fuentes de energía utilizadas en una región o país.' },
+    { term: 'Net metering / Compensación de excedentes', definition: 'Mecanismo para compensar la energía generada y vertida a la red.' },
   ];
 
   const [answers, setAnswers] = useState<number[]>(Array(quiz.length).fill(-1));
@@ -102,7 +77,7 @@ const Page: React.FC = () => {
     const saved = localStorage.getItem('education_completed_modules');
     if (saved) {
       const arr = JSON.parse(saved) as string[];
-      setCompleted(arr.includes('huella-carbono'));
+      setCompleted(arr.includes('energia-renovable'));
     }
   }, []);
 
@@ -120,8 +95,8 @@ const Page: React.FC = () => {
   const markCompleted = () => {
     const saved = localStorage.getItem('education_completed_modules');
     const arr = saved ? (JSON.parse(saved) as string[]) : [];
-    if (!arr.includes('huella-carbono')) {
-      const next = [...arr, 'huella-carbono'];
+    if (!arr.includes('energia-renovable')) {
+      const next = [...arr, 'energia-renovable'];
       localStorage.setItem('education_completed_modules', JSON.stringify(next));
       setCompleted(true);
     }
@@ -129,22 +104,22 @@ const Page: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-600 text-white">
+      <div className="bg-gradient-to-br from-yellow-500 via-yellow-600 to-orange-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Gauge className="h-8 w-8" />
-              <h1 className="text-2xl md:text-3xl font-bold">Módulo: Huella de Carbono</h1>
+              <Sun className="h-8 w-8" />
+              <h1 className="text-2xl md:text-3xl font-bold">Módulo: Energía Renovable</h1>
               {completed && <BadgeCheck className="h-6 w-6 text-white" />}
             </div>
             <Link href="/education">
-              <Button variant="outline" className="bg-white text-emerald-700 hover:bg-emerald-50">
+              <Button variant="outline" className="bg-white text-yellow-700 hover:bg-yellow-50">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Educación
               </Button>
             </Link>
           </div>
-          <p className="mt-4 text-emerald-100 max-w-3xl">
-            Aprende a medir, reportar y reducir las emisiones de GEI asociadas a actividades y productos.
+          <p className="mt-4 text-yellow-100 max-w-3xl">
+            Descubre las fuentes renovables (solar, eólica, hidráulica) y cómo aplicar eficiencia y autoconsumo para reducir emisiones y ahorrar.
           </p>
         </div>
       </div>
@@ -154,16 +129,16 @@ const Page: React.FC = () => {
           <div className="lg:col-span-2 space-y-8">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Leaf className="h-5 w-5" /> Introducción</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Wind className="h-5 w-5" /> Introducción</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-700 mb-4">
-                  La huella de carbono cuantifica las emisiones de gases de efecto invernadero (GEI) generadas por una actividad, organización o producto, normalmente expresadas en CO2 equivalente (CO2e).
-                  Se basa en estándares como GHG Protocol e ISO 14064 y se organiza en alcances (1, 2 y 3).
+                  Las energías renovables provienen de fuentes naturales inagotables o de regeneración continua. Entre las más comunes se encuentran la solar, la eólica y la hidráulica. 
+                  Combinadas con medidas de eficiencia energética, permiten reducir la dependencia de combustibles fósiles, las emisiones y los costes.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {objectives.map((obj, i) => (
-                    <span key={i} className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-sm">{obj}</span>
+                    <span key={i} className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full text-sm">{obj}</span>
                   ))}
                 </div>
               </CardContent>
@@ -171,20 +146,20 @@ const Page: React.FC = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Flame className="h-5 w-5" /> Video</CardTitle>
+                <CardTitle className="flex items-center gap-2">Video</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="aspect-video w-full rounded-lg overflow-hidden bg-black">
+                <div className="aspect-video w-full rounded-lg overflow-hidden bg-gray-200">
                   <iframe
                     className="w-full h-full"
-                    src={`${VIDEO_EMBED}?rel=0`}
-                    title="Huella de Carbono"
-                    frameBorder={0}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    src="https://www.youtube.com/embed/XgFRTehpDsk"
+                    title="Fuentes de energía renovables: eólica, hidráulica y mareomotriz"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
-                  />
+                  ></iframe>
                 </div>
-                <p className="text-sm text-gray-600 mt-3">Video divulgativo en español para introducir conceptos clave de medición y reducción.</p>
+                <p className="text-sm text-gray-600 mt-3">Recurso educativo en español orientado a nivel introductorio.</p>
               </CardContent>
             </Card>
 
@@ -205,7 +180,7 @@ const Page: React.FC = () => {
                               name={`q-${i}`}
                               checked={answers[i] === j}
                               onChange={() => handleAnswer(i, j)}
-                              className="accent-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                              className="accent-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-600"
                             />
                             <span className="text-gray-900">{opt}</span>
                           </label>
@@ -221,7 +196,7 @@ const Page: React.FC = () => {
                       )}
                     </div>
                   ))}
-                  <Button onClick={checkQuiz} className="bg-emerald-600 hover:bg-emerald-700">Calcular puntaje</Button>
+                  <Button onClick={checkQuiz} className="bg-yellow-600 hover:bg-yellow-700">Calcular puntaje</Button>
                   {score !== null && (
                     <p className="text-gray-900 font-semibold">Tu puntaje: {score} / {quiz.length}</p>
                   )}
@@ -249,17 +224,29 @@ const Page: React.FC = () => {
           <div className="space-y-8">
             <Card>
               <CardHeader>
-                <CardTitle>Recursos</CardTitle>
+                <CardTitle className="flex items-center gap-2">Lecturas y recursos</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="list-disc list-inside space-y-2 text-gray-700">
-                  {resources.map((r) => (
-                    <li key={r.url}>
-                      <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:text-emerald-800 underline">
-                        {r.title}
-                      </a>
+                <ul className="list-disc pl-5 space-y-2 text-gray-700">
+                  {resources.map((r, i) => (
+                    <li key={i}>
+                      <a href={r.url} target="_blank" rel="noreferrer" className="text-yellow-700 hover:underline">{r.title}</a>
                     </li>
                   ))}
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Acciones prácticas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2 text-gray-700">
+                  <li>Reemplaza bombillas por LED y optimiza el uso de iluminación natural.</li>
+                  <li>Reduce el consumo en standby usando regletas con interruptor.</li>
+                  <li>Mejora el aislamiento en ventanas y puertas para disminuir pérdidas térmicas.</li>
+                  <li>Evalúa la viabilidad de autoconsumo solar y electrodomésticos eficientes (A+++).</li>
                 </ul>
               </CardContent>
             </Card>
@@ -269,9 +256,8 @@ const Page: React.FC = () => {
                 <CardTitle>Finalizar módulo</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-700 mb-3">Marca este módulo como completado para registrar tu progreso.</p>
-                <Button onClick={markCompleted} className={completed ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'} disabled={completed}>
-                  {completed ? <><CheckCircle className="mr-2 h-4 w-4" /> Módulo completado</> : 'Marcar como completado'}
+                <Button onClick={markCompleted} className="w-full bg-green-600 hover:bg-green-700">
+                  Marcar como completado <CheckCircle className="ml-2 h-4 w-4" />
                 </Button>
                 {completed && (
                   <p className="text-sm text-gray-600 mt-2">Tu progreso se guarda localmente en tu navegador.</p>
@@ -285,7 +271,7 @@ const Page: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <Link href="/education">
-                  <Button className="w-full">Volver y elegir otro módulo <ArrowRight className="ml-2 h-4 w-4" /></Button>
+                  <Button className="w-full">Volver y elegir otro módulo <ArrowLeft className="ml-2 h-4 w-4" /></Button>
                 </Link>
               </CardContent>
             </Card>

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { BadgeCheck, Flame, Leaf, Gauge, ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
+import { BadgeCheck, ShoppingCart, Target, ArrowLeft, CheckCircle } from 'lucide-react';
 
 interface QuizQuestion {
   question: string;
@@ -18,80 +18,63 @@ interface Flashcard {
   definition: string;
 }
 
-const VIDEO_EMBED = 'https://www.youtube.com/embed/KJgGfY5PACM';
-
 const Page: React.FC = () => {
   const objectives = [
-    'Entender qué es la huella de carbono y cómo se mide',
-    'Conocer las fuentes de emisiones directas e indirectas (alcances 1, 2 y 3)',
-    'Identificar estrategias para reducir y compensar emisiones',
-    'Explorar herramientas para el cálculo y reporte',
+    'Adoptar hábitos de compra conscientes y sostenibles',
+    'Diferenciar necesidad vs. deseo antes de adquirir productos',
+    'Evaluar el impacto ambiental y social de lo que consumimos',
+    'Aplicar estrategias como reparar, reutilizar y compartir',
   ];
 
   const resources = [
     {
-      title: 'Huella de Carbono – Guía básica (Ministerio de Transición Ecológica, España)',
-      url: 'https://www.miteco.gob.es/es/cambio-climatico/temas/mitigacion-politicas-y-medidas/huella-de-carbono.html',
+      title: 'Guía de consumo responsable (OXFAM)',
+      url: 'https://blog.oxfamintermon.org/consumo-responsable-sostenible/',
     },
     {
-      title: 'GHG Protocol – Corporate Standard',
-      url: 'https://ghgprotocol.org/corporate-standard',
+      title: '10 hábitos de consumo responsable',
+      url: 'https://ecologiadigital.bio/cuales-son-algunos-ejemplos-de-consumo-sostenible-que-puedo-implementar-en-mi-vida-diaria/',
     },
     {
-      title: 'ISO 14064 – Medición y reporte de GEI',
-      url: 'https://www.iso.org/standard/66454.html',
+      title: 'Estrategias de compra consciente',
+      url: 'https://www.un.org/sustainabledevelopment/es/sustainable-consumption-production/',
     },
   ];
 
   const quiz: QuizQuestion[] = [
     {
-      question: 'La huella de carbono mide…',
+      question: 'Antes de comprar, ¿qué deberías preguntarte primero?',
       options: [
-        'El consumo de agua de una organización',
-        'Las emisiones de GEI asociadas a actividades y productos',
-        'La biodiversidad de un territorio',
-        'La cantidad de residuos sólidos generados',
+        'Si el producto está de moda',
+        'Si realmente lo necesitas y por cuánto tiempo lo usarás',
+        'Si puedes devolverlo fácilmente',
+        'Si está en oferta',
       ],
+      correctIndex: 1,
+      explanation: 'La clave del consumo responsable es cuestionar la necesidad real y la duración de uso.',
+    },
+    {
+      question: 'Una práctica de consumo responsable es…',
+      options: ['Comprar siempre nuevo', 'Reparar y reutilizar antes de reemplazar', 'Desechar tras el primer fallo', 'Elegir productos de corta duración'],
       correctIndex: 1,
     },
     {
-      question: 'El alcance 1 se refiere a…',
-      options: [
-        'Emisiones directas controladas por la organización (combustión en calderas, vehículos)',
-        'Emisiones por electricidad adquirida',
-        'Emisiones de la cadena de valor (proveedores, uso de producto)',
-        'Emisiones por viajes aéreos de terceros',
-      ],
-      correctIndex: 0,
-    },
-    {
-      question: 'Una estrategia efectiva para reducir emisiones es…',
-      options: [
-        'Incrementar consumo de combustibles fósiles',
-        'Mejorar eficiencia energética y electrificar procesos con renovables',
-        'Aumentar la obsolescencia de equipos',
-        'Ignorar datos de proveedores',
-      ],
+      question: 'Para reducir el impacto, conviene…',
+      options: ['Priorizar envases de un solo uso', 'Elegir productos locales y duraderos', 'Comprar impulsivamente', 'Ignorar la eficiencia energética'],
       correctIndex: 1,
     },
     {
-      question: 'La compensación de carbono…',
-      options: [
-        'Sustituye la reducción de emisiones',
-        'Complementa la reducción con proyectos certificados (reforestación, captura)',
-        'No tiene estándares reconocidos',
-        'Se basa en emisiones de alcance 4',
-      ],
+      question: 'El intercambio y la compra de segunda mano…',
+      options: ['Aumenta residuos', 'Reduce la demanda de productos nuevos y extiende la vida útil', 'No tiene beneficios ambientales', 'Es menos transparente que lo nuevo'],
       correctIndex: 1,
     },
   ];
 
   const flashcards: Flashcard[] = [
-    { term: 'GEI', definition: 'Gases de Efecto Invernadero: CO2, CH4, N2O, etc.' },
-    { term: 'Alcance 1', definition: 'Emisiones directas de fuentes controladas por la organización.' },
-    { term: 'Alcance 2', definition: 'Emisiones indirectas por electricidad/energía comprada.' },
-    { term: 'Alcance 3', definition: 'Emisiones indirectas de la cadena de valor.' },
-    { term: 'Factor de emisión', definition: 'Relación entre actividad y emisiones (p.ej., kg CO2e/kWh).'},
+    { term: 'Necesidad vs. deseo', definition: 'Analizar si un producto es realmente necesario o solo deseado.' },
+    { term: 'Durabilidad', definition: 'Capacidad de un producto para resistir uso prolongado y reparaciones.' },
+    { term: 'Economía compartida', definition: 'Modelos para usar en vez de poseer: alquilar, compartir, intercambiar.' },
+    { term: 'Huella ambiental', definition: 'Impacto total (materiales, energía, residuos) asociado a un producto.' },
   ];
 
   const [answers, setAnswers] = useState<number[]>(Array(quiz.length).fill(-1));
@@ -102,7 +85,7 @@ const Page: React.FC = () => {
     const saved = localStorage.getItem('education_completed_modules');
     if (saved) {
       const arr = JSON.parse(saved) as string[];
-      setCompleted(arr.includes('huella-carbono'));
+      setCompleted(arr.includes('consumo-responsable'));
     }
   }, []);
 
@@ -120,8 +103,8 @@ const Page: React.FC = () => {
   const markCompleted = () => {
     const saved = localStorage.getItem('education_completed_modules');
     const arr = saved ? (JSON.parse(saved) as string[]) : [];
-    if (!arr.includes('huella-carbono')) {
-      const next = [...arr, 'huella-carbono'];
+    if (!arr.includes('consumo-responsable')) {
+      const next = [...arr, 'consumo-responsable'];
       localStorage.setItem('education_completed_modules', JSON.stringify(next));
       setCompleted(true);
     }
@@ -129,22 +112,22 @@ const Page: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-600 text-white">
+      <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Gauge className="h-8 w-8" />
-              <h1 className="text-2xl md:text-3xl font-bold">Módulo: Huella de Carbono</h1>
+              <ShoppingCart className="h-8 w-8" />
+              <h1 className="text-2xl md:text-3xl font-bold">Módulo: Consumo Responsable</h1>
               {completed && <BadgeCheck className="h-6 w-6 text-white" />}
             </div>
             <Link href="/education">
-              <Button variant="outline" className="bg-white text-emerald-700 hover:bg-emerald-50">
+              <Button variant="outline" className="bg-white text-purple-700 hover:bg-purple-50">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Educación
               </Button>
             </Link>
           </div>
-          <p className="mt-4 text-emerald-100 max-w-3xl">
-            Aprende a medir, reportar y reducir las emisiones de GEI asociadas a actividades y productos.
+          <p className="mt-4 text-purple-100 max-w-3xl">
+            Aprende a tomar decisiones de compra conscientes que reduzcan tu impacto y fomenten usos más sostenibles de los productos.
           </p>
         </div>
       </div>
@@ -154,16 +137,16 @@ const Page: React.FC = () => {
           <div className="lg:col-span-2 space-y-8">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Leaf className="h-5 w-5" /> Introducción</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Target className="h-5 w-5" /> Introducción</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-700 mb-4">
-                  La huella de carbono cuantifica las emisiones de gases de efecto invernadero (GEI) generadas por una actividad, organización o producto, normalmente expresadas en CO2 equivalente (CO2e).
-                  Se basa en estándares como GHG Protocol e ISO 14064 y se organiza en alcances (1, 2 y 3).
+                  El consumo responsable implica elegir productos y servicios considerando su utilidad real, su durabilidad, el origen de los materiales y su impacto ambiental y social. 
+                  Impulsa prácticas como reparar, reutilizar, compartir y comprar de segunda mano para extender la vida útil y reducir residuos.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {objectives.map((obj, i) => (
-                    <span key={i} className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-sm">{obj}</span>
+                    <span key={i} className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-sm">{obj}</span>
                   ))}
                 </div>
               </CardContent>
@@ -171,20 +154,20 @@ const Page: React.FC = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Flame className="h-5 w-5" /> Video</CardTitle>
+                <CardTitle className="flex items-center gap-2">Video</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="aspect-video w-full rounded-lg overflow-hidden bg-black">
+                <div className="aspect-video w-full rounded-lg overflow-hidden bg-gray-200">
                   <iframe
                     className="w-full h-full"
-                    src={`${VIDEO_EMBED}?rel=0`}
-                    title="Huella de Carbono"
-                    frameBorder={0}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    src="https://www.youtube.com/embed/qtXuRvKNm3s"
+                    title="ODS 12: Producción y consumo responsable"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
-                  />
+                  ></iframe>
                 </div>
-                <p className="text-sm text-gray-600 mt-3">Video divulgativo en español para introducir conceptos clave de medición y reducción.</p>
+                <p className="text-sm text-gray-600 mt-3">Fuente: ONU y recursos educativos sobre ODS 12.</p>
               </CardContent>
             </Card>
 
@@ -205,23 +188,23 @@ const Page: React.FC = () => {
                               name={`q-${i}`}
                               checked={answers[i] === j}
                               onChange={() => handleAnswer(i, j)}
-                              className="accent-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                              className="accent-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-600"
                             />
                             <span className="text-gray-900">{opt}</span>
                           </label>
                         ))}
                       </div>
-                      {score !== null && (
+                      {answers[i] !== -1 && (
                         <p className={answers[i] === q.correctIndex ? 'text-green-700' : 'text-red-700'}>
                           {answers[i] === q.correctIndex ? 'Correcto' : 'Incorrecto'}
                         </p>
                       )}
-                      {score !== null && q.explanation && (
+                      {answers[i] !== -1 && q.explanation && (
                         <p className="text-gray-600 text-sm mt-1">{q.explanation}</p>
                       )}
                     </div>
                   ))}
-                  <Button onClick={checkQuiz} className="bg-emerald-600 hover:bg-emerald-700">Calcular puntaje</Button>
+                  <Button onClick={checkQuiz} className="bg-purple-600 hover:bg-purple-700">Calcular puntaje</Button>
                   {score !== null && (
                     <p className="text-gray-900 font-semibold">Tu puntaje: {score} / {quiz.length}</p>
                   )}
@@ -249,15 +232,13 @@ const Page: React.FC = () => {
           <div className="space-y-8">
             <Card>
               <CardHeader>
-                <CardTitle>Recursos</CardTitle>
+                <CardTitle className="flex items-center gap-2">Lecturas y recursos</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="list-disc list-inside space-y-2 text-gray-700">
-                  {resources.map((r) => (
-                    <li key={r.url}>
-                      <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:text-emerald-800 underline">
-                        {r.title}
-                      </a>
+                <ul className="list-disc pl-5 space-y-2 text-gray-700">
+                  {resources.map((r, i) => (
+                    <li key={i}>
+                      <a href={r.url} target="_blank" rel="noreferrer" className="text-purple-700 hover:underline">{r.title}</a>
                     </li>
                   ))}
                 </ul>
@@ -266,27 +247,32 @@ const Page: React.FC = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Finalizar módulo</CardTitle>
+                <CardTitle>Acciones prácticas</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-700 mb-3">Marca este módulo como completado para registrar tu progreso.</p>
-                <Button onClick={markCompleted} className={completed ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'} disabled={completed}>
-                  {completed ? <><CheckCircle className="mr-2 h-4 w-4" /> Módulo completado</> : 'Marcar como completado'}
-                </Button>
-                {completed && (
-                  <p className="text-sm text-gray-600 mt-2">Tu progreso se guarda localmente en tu navegador.</p>
-                )}
+                <ul className="space-y-2 text-gray-700">
+                  <li>Antes de comprar, espera 24 horas y reevalúa la necesidad.</li>
+                  <li>Prioriza productos reparables, modulares y con garantías claras.</li>
+                  <li>Compra de segunda mano o intercambia en tu comunidad.</li>
+                  <li>Elige envases reutilizables y evita el un solo uso.</li>
+                  <li>Prefiere productos locales y con menor huella logística.</li>
+                </ul>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Siguiente paso</CardTitle>
+                <CardTitle className="flex items-center gap-2">Marcar como completado</CardTitle>
               </CardHeader>
               <CardContent>
-                <Link href="/education">
-                  <Button className="w-full">Volver y elegir otro módulo <ArrowRight className="ml-2 h-4 w-4" /></Button>
-                </Link>
+                <Button onClick={markCompleted} className="bg-purple-600 hover:bg-purple-700">
+                  <CheckCircle className="mr-2 h-4 w-4" /> Marcar módulo como completado
+                </Button>
+                {completed && (
+                  <p className="mt-2 text-green-700 flex items-center gap-2">
+                    <BadgeCheck className="h-5 w-5" /> ¡Has completado este módulo!
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
