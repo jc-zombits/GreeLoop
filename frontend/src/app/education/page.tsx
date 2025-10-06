@@ -161,8 +161,21 @@ const EducationPage: React.FC = () => {
       topics: ['Colaboración', 'Iniciativas locales', 'Redes de intercambio']
     }
   ];
-  // Dataset de progreso por usuario (derivado de localStorage)
-  const progressData = modules.map(m => ({ id: m.id, title: m.title, completed: completedModules.includes(m.id) }));
+  // Dataset de progreso por usuario (derivado de localStorage con porcentaje parcial)
+  const progressData = modules.map(m => {
+    const completed = completedModules.includes(m.id);
+    // Leer porcentaje parcial de localStorage si existe
+    let percent = 0;
+    try {
+      const savedProgress = localStorage.getItem('education_progress');
+      if (savedProgress) {
+        const obj = JSON.parse(savedProgress) as Record<string, number>;
+        percent = obj[m.id] ?? 0;
+      }
+    } catch {}
+    if (completed) percent = 100;
+    return { id: m.id, title: m.title, completed, percent };
+  });
 
   const handleModuleComplete = (moduleId: string) => {
     if (!completedModules.includes(moduleId)) {
@@ -279,13 +292,13 @@ const EducationPage: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 {progressData.map((mod) => {
-                  const percent = mod.completed ? 100 : 0;
+                  const percent = Math.max(0, Math.min(100, mod.percent));
                   return (
                     <div key={mod.id} className="space-y-2">
                       <div className="flex items-center justify-between text-sm text-gray-700">
                         <span className="font-medium">{mod.title}</span>
                         <span className={mod.completed ? 'text-green-700 font-medium' : 'text-gray-500'}>
-                          {mod.completed ? 'Completado' : 'Pendiente'}
+                          {mod.completed ? 'Completado' : `${percent}%`}
                         </span>
                       </div>
                       {/* Contenedor tipo "marca de agua" */}
@@ -294,14 +307,14 @@ const EducationPage: React.FC = () => {
                         <div
                           className={
                             'h-4 rounded-full transition-all duration-700 ease-out ' +
-                            (mod.completed ? 'bg-green-600' : 'bg-green-600 opacity-20')
+                            (mod.completed ? 'bg-green-600' : 'bg-green-600 opacity-40')
                           }
                           style={{ width: `${percent}%` }}
                           role="progressbar"
                           aria-valuenow={percent}
                           aria-valuemin={0}
                           aria-valuemax={100}
-                          aria-label={`Progreso en ${mod.title}: ${mod.completed ? 'completado' : 'pendiente'}`}
+                          aria-label={`Progreso en ${mod.title}: ${mod.completed ? 'completado' : `${percent}%`}`}
                         />
                       </div>
                     </div>

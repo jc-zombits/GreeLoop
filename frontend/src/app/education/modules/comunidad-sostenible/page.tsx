@@ -99,6 +99,15 @@ const Page: React.FC = () => {
     const next = [...answers];
     next[qIndex] = optIndex;
     setAnswers(next);
+    // Persistir progreso parcial
+    try {
+      const answered = next.filter((v) => v !== -1).length;
+      const percent = Math.round((answered / quiz.length) * 100);
+      const savedProgress = localStorage.getItem('education_progress');
+      const obj = savedProgress ? (JSON.parse(savedProgress) as Record<string, number>) : {};
+      obj['comunidad-sostenible'] = percent;
+      localStorage.setItem('education_progress', JSON.stringify(obj));
+    } catch {}
   };
 
   const calculateScore = () => {
@@ -107,6 +116,13 @@ const Page: React.FC = () => {
       if (answers[i] === q.correctIndex) s++;
     });
     setScore(s);
+    try {
+      const percent = Math.round((s / quiz.length) * 100);
+      const savedProgress = localStorage.getItem('education_progress');
+      const obj = savedProgress ? (JSON.parse(savedProgress) as Record<string, number>) : {};
+      obj['comunidad-sostenible'] = percent;
+      localStorage.setItem('education_progress', JSON.stringify(obj));
+    } catch {}
   };
 
   const markCompleted = () => {

@@ -123,11 +123,27 @@ const Page: React.FC = () => {
     const next = [...answers];
     next[qIndex] = optionIndex;
     setAnswers(next);
+    // Persistir progreso parcial
+    try {
+      const answered = next.filter((v) => v !== -1).length;
+      const percent = Math.round((answered / quiz.length) * 100);
+      const savedProgress = localStorage.getItem('education_progress');
+      const obj = savedProgress ? (JSON.parse(savedProgress) as Record<string, number>) : {};
+      obj['economia-circular'] = percent;
+      localStorage.setItem('education_progress', JSON.stringify(obj));
+    } catch {}
   };
 
   const checkQuiz = () => {
     const s = answers.reduce((acc, ans, i) => (ans === quiz[i].correctIndex ? acc + 1 : acc), 0);
     setScore(s);
+    try {
+      const percent = Math.round((s / quiz.length) * 100);
+      const savedProgress = localStorage.getItem('education_progress');
+      const obj = savedProgress ? (JSON.parse(savedProgress) as Record<string, number>) : {};
+      obj['economia-circular'] = percent;
+      localStorage.setItem('education_progress', JSON.stringify(obj));
+    } catch {}
   };
 
   const markCompleted = () => {
