@@ -162,6 +162,17 @@ const EducationPage: React.FC = () => {
     }
   ];
 
+  // Datos agregados de finalización por módulo (demo hasta integrar backend)
+  const [moduleCompletionStats] = useState<Array<{ id: string; title: string; count: number }>>([
+    { id: 'economia-circular', title: 'Economía Circular', count: 1200 },
+    { id: 'huella-carbono', title: 'Huella de Carbono', count: 980 },
+    { id: 'consumo-responsable', title: 'Consumo Responsable', count: 1125 },
+    { id: 'energia-renovable', title: 'Energía Renovable', count: 750 },
+    { id: 'biodiversidad', title: 'Biodiversidad y Ecosistemas', count: 640 },
+    { id: 'comunidad-sostenible', title: 'Comunidad Sostenible', count: 915 },
+  ]);
+  const maxCompletionCount = Math.max(...moduleCompletionStats.map(s => s.count));
+
   const handleModuleComplete = (moduleId: string) => {
     if (!completedModules.includes(moduleId)) {
       setCompletedModules([...completedModules, moduleId]);
@@ -256,6 +267,54 @@ const EducationPage: React.FC = () => {
               })}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Progress Statistics Section */}
+      <div className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Estadísticas de Progreso
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Personas que han completado cada módulo de educación
+            </p>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Award className="h-5 w-5" /> Completados por módulo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div role="img" aria-label="Gráfica de barras de módulos completados" className="space-y-4">
+                {moduleCompletionStats.map((stat) => {
+                  const widthPct = Math.round((stat.count / maxCompletionCount) * 100);
+                  return (
+                    <div key={stat.id} className="space-y-2">
+                      <div className="flex items-center justify-between text-sm text-gray-700">
+                        <span className="font-medium">{stat.title}</span>
+                        <span className="text-gray-500">{stat.count.toLocaleString()} personas</span>
+                      </div>
+                      <div className="bg-green-100 h-4 rounded-full">
+                        <div
+                          className="bg-green-600 h-4 rounded-full transition-all"
+                          style={{ width: `${widthPct}%` }}
+                          role="progressbar"
+                          aria-valuenow={stat.count}
+                          aria-valuemin={0}
+                          aria-valuemax={maxCompletionCount}
+                          aria-label={`Personas que completaron ${stat.title}`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-6 text-xs text-gray-500">
+                Nota: datos demostrativos. Integrar con backend para contar finalizaciones reales por módulo.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
