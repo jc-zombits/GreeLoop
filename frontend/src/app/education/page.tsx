@@ -161,17 +161,8 @@ const EducationPage: React.FC = () => {
       topics: ['Colaboración', 'Iniciativas locales', 'Redes de intercambio']
     }
   ];
-
-  // Datos agregados de finalización por módulo (demo hasta integrar backend)
-  const [moduleCompletionStats] = useState<Array<{ id: string; title: string; count: number }>>([
-    { id: 'economia-circular', title: 'Economía Circular', count: 1200 },
-    { id: 'huella-carbono', title: 'Huella de Carbono', count: 980 },
-    { id: 'consumo-responsable', title: 'Consumo Responsable', count: 1125 },
-    { id: 'energia-renovable', title: 'Energía Renovable', count: 750 },
-    { id: 'biodiversidad', title: 'Biodiversidad y Ecosistemas', count: 640 },
-    { id: 'comunidad-sostenible', title: 'Comunidad Sostenible', count: 915 },
-  ]);
-  const maxCompletionCount = Math.max(...moduleCompletionStats.map(s => s.count));
+  // Dataset de progreso por usuario (derivado de localStorage)
+  const progressData = modules.map(m => ({ id: m.id, title: m.title, completed: completedModules.includes(m.id) }));
 
   const handleModuleComplete = (moduleId: string) => {
     if (!completedModules.includes(moduleId)) {
@@ -270,40 +261,47 @@ const EducationPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Progress Statistics Section */}
+      {/* Progress Statistics Section (dinámico por usuario) */}
       <div className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Estadísticas de Progreso
+              Tu Progreso en los Módulos
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Personas que han completado cada módulo de educación
+              Las barras están en “marca de agua” y se rellenan al completar.
             </p>
           </div>
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Award className="h-5 w-5" /> Completados por módulo</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Award className="h-5 w-5" /> Progreso por módulo</CardTitle>
             </CardHeader>
             <CardContent>
-              <div role="img" aria-label="Gráfica de barras de módulos completados" className="space-y-4">
-                {moduleCompletionStats.map((stat) => {
-                  const widthPct = Math.round((stat.count / maxCompletionCount) * 100);
+              <div className="space-y-4">
+                {progressData.map((mod) => {
+                  const percent = mod.completed ? 100 : 0;
                   return (
-                    <div key={stat.id} className="space-y-2">
+                    <div key={mod.id} className="space-y-2">
                       <div className="flex items-center justify-between text-sm text-gray-700">
-                        <span className="font-medium">{stat.title}</span>
-                        <span className="text-gray-500">{stat.count.toLocaleString()} personas</span>
+                        <span className="font-medium">{mod.title}</span>
+                        <span className={mod.completed ? 'text-green-700 font-medium' : 'text-gray-500'}>
+                          {mod.completed ? 'Completado' : 'Pendiente'}
+                        </span>
                       </div>
-                      <div className="bg-green-100 h-4 rounded-full">
+                      {/* Contenedor tipo "marca de agua" */}
+                      <div className="bg-gray-200 h-4 rounded-full overflow-hidden">
+                        {/* Capa de relleno dinámico que se oscurece al completar */}
                         <div
-                          className="bg-green-600 h-4 rounded-full transition-all"
-                          style={{ width: `${widthPct}%` }}
+                          className={
+                            'h-4 rounded-full transition-all duration-700 ease-out ' +
+                            (mod.completed ? 'bg-green-600' : 'bg-green-600 opacity-20')
+                          }
+                          style={{ width: `${percent}%` }}
                           role="progressbar"
-                          aria-valuenow={stat.count}
+                          aria-valuenow={percent}
                           aria-valuemin={0}
-                          aria-valuemax={maxCompletionCount}
-                          aria-label={`Personas que completaron ${stat.title}`}
+                          aria-valuemax={100}
+                          aria-label={`Progreso en ${mod.title}: ${mod.completed ? 'completado' : 'pendiente'}`}
                         />
                       </div>
                     </div>
@@ -311,7 +309,7 @@ const EducationPage: React.FC = () => {
                 })}
               </div>
               <p className="mt-6 text-xs text-gray-500">
-                Nota: datos demostrativos. Integrar con backend para contar finalizaciones reales por módulo.
+                Nota: este progreso se guarda localmente por usuario. Para estadísticas globales, integraremos backend.
               </p>
             </CardContent>
           </Card>
