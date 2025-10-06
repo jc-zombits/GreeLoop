@@ -138,7 +138,7 @@ docker-compose exec backend python scripts/seed_data.py
 ```
 
 ### 6. Acceder a la Aplicación
-- **Frontend**: http://localhost:3000
+- **Frontend**: http://localhost:3009
 - **Backend API**: http://localhost:8000
 - **Documentación API**: http://localhost:8000/docs
 
@@ -156,7 +156,7 @@ docker-compose exec backend python scripts/seed_data.py
 - **API endpoints**: `/api/v1/community/posts` para gestión completa de posts
 
 #### Mejoras Técnicas
-- **Puertos estables**: Frontend siempre en puerto 3000, backend en puerto 8000
+- **Puertos estables**: Frontend siempre en puerto 3009, backend en puerto 8000
 - **Proxy configurado**: Redirección automática de `/api/*` al backend
 - **Experiencia de usuario mejorada**: URLs consistentes y predecibles
 

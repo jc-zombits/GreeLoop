@@ -45,6 +45,8 @@ app.add_middleware(
     allow_origins=settings.ALLOWED_HOSTS if settings.ENVIRONMENT == "production" else [
         "http://localhost:3000",  # Frontend Next.js
         "http://127.0.0.1:3000",
+        "http://localhost:3009",  # Frontend Next.js en puerto fijo
+        "http://127.0.0.1:3009",
         "http://localhost:8000",  # Docs
         "http://localhost:8080",  # Desarrollo adicional
     ],
