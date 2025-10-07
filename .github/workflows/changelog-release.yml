@@ -24,7 +24,12 @@ jobs:
           tag-prefix: 'v'
           output-file: 'CHANGELOG.md'
           release-count: 0
-          skip-version-file: true
-          create-release: true
           preset: 'conventionalcommits'
           fail-on-error: true
+          # Evitar cambios en versión/commit/tag cuando el disparo es por tag
+          skip-version-file: true
+          skip-bump: true
+          skip-tag: true
+          skip-commit: true
+          # Publicar el Release basado en el tag recibido
+          create-release: true
