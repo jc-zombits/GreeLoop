@@ -1,10 +1,17 @@
-name: Release
+name: Release (manual)
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag a publicar (ej. v0.3.1)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Marcar como prerelease'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -19,10 +26,10 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
+          tag_name: ${{ github.event.inputs.tag_name }}
+          name: ${{ github.event.inputs.tag_name }}
           draft: false
-          prerelease: false
+          prerelease: ${{ github.event.inputs.prerelease }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

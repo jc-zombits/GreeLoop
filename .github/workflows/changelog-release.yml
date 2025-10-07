@@ -1,0 +1,30 @@
+name: Changelog & Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  changelog_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Changelog and Release
+        uses: TriPSs/conventional-changelog-action@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          tag-prefix: 'v'
+          output-file: 'CHANGELOG.md'
+          release-count: 0
+          skip-version-file: true
+          create-release: true
+          preset: 'conventionalcommits'
+          fail-on-error: true

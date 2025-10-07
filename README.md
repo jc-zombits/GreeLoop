@@ -257,6 +257,25 @@ docker-compose exec frontend npm run test:watch
 - **Commits**: Usar Conventional Commits
 - **Branches**: `feature/`, `bugfix/`, `hotfix/`
 
+### Convenciones de Commits (Conventional Commits)
+
+Usamos [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) para que el changelog y los releases se generen automáticamente:
+
+- `feat: ...` nuevas funcionalidades
+- `fix: ...` correcciones de bugs
+- `docs: ...` documentación
+- `style: ...` formato o estilo sin cambios de lógica
+- `refactor: ...` cambios internos sin nuevas features o fixes
+- `perf: ...` mejoras de rendimiento
+- `test: ...` añadir o corregir tests
+- `chore: ...` mantenimiento (build, dependencias, tooling)
+
+Ejemplos:
+- `feat(admin): mejorar contraste y añadir modo verdoso`
+- `fix(auth): corregir expiración de token`
+
+Al crear un tag `vX.Y.Z` y pushearlo, el workflow `Changelog & Release` publicará el Release con notas generadas.
+
 ## 📝 Roadmap
 
 ### Fase 1: MVP (14 semanas)
