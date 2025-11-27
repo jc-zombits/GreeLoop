@@ -14,6 +14,7 @@ Trueque Verde 2.0 es una plataforma de economía circular que facilita el interc
 - **Tareas Asíncronas**: Celery
 - **Autenticación**: JWT + OAuth2
 - **Contenedores**: Docker
+- **Correo electrónico**: SMTP (STARTTLS) vía `app/utils/email.py`
 
 ### Frontend
 - **Framework**: React + Next.js
@@ -81,6 +82,7 @@ Trueque Verde 2.0 es una plataforma de economía circular que facilita el interc
 - OAuth2 para login social
 - RBAC (Role-Based Access Control)
 - Rate limiting
+- Recuperación de contraseña con tokens firmados y validación de email
 
 ### Protección de Datos
 - Encriptación en tránsito (HTTPS/TLS)

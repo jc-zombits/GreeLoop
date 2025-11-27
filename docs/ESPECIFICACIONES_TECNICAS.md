@@ -283,6 +283,32 @@ async def refresh_token(
     return await auth_service.refresh_access_token(refresh_token)
 ```
 
+##### Recuperación de contraseña
+
+```python
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.utils.email import send_email
+
+router = APIRouter(prefix="/auth", tags=["authentication"])
+
+@router.post("/request-password-reset")
+async def request_password_reset(reset_data: PasswordResetRequest, db: Session = Depends(get_db)):
+    """Solicitar enlace de recuperación; envía correo con token"""
+    # Generar token y enviar correo con URL de reset (frontend)
+    # Cuerpo esperado: { "email": "usuario@dominio.com" }
+
+@router.post("/reset-password")
+async def reset_password(reset_data: PasswordResetConfirm, db: Session = Depends(get_db)):
+    """Restablecer contraseña usando token y email"""
+    # Cuerpo esperado: { "token", "email", "new_password", "confirm_password" }
+```
+
+Frontend asociado:
+- `GET /auth/forgot-password` para solicitar enlace
+- `GET /auth/reset-password?token=...&email=...` para establecer nueva contraseña
+
 #### app/api/v1/items.py
 ```python
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File

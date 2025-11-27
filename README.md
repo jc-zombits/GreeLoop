@@ -42,10 +42,10 @@ Trueque Verde 2.0 es una plataforma global de intercambio sostenible que facilit
 
 ### Frontend
 - **Framework**: React + Next.js
-- **HTTP Client**: Axios
-- **Estilos**: TailwindCSS + Ant Design
-- **Estado**: Redux Toolkit
-- **Mapas**: Leaflet/React-Leaflet
+- **HTTP Client**: `fetch` con envoltorio `apiClient` (`frontend/src/lib/api.ts`)
+- **Estilos**: TailwindCSS + componentes propios en `components/ui`
+- **Estado**: Hooks y estado local por página
+- **Mapas**: Leaflet
 
 ### DevOps
 - **Contenedores**: Docker + Docker Compose
@@ -110,6 +110,18 @@ cp frontend/.env.local.example frontend/.env.local
 # Editar frontend/.env.local con tus configuraciones
 ```
 
+#### Configuración de SMTP (backend)
+Para habilitar el envío de correos (recuperación de contraseña, notificaciones), define estas variables en `backend/.env`:
+
+```env
+SMTP_HOST=smtp.tu-proveedor.com
+SMTP_PORT=587
+SMTP_USER=tu_usuario_smtp
+SMTP_PASSWORD=tu_password_smtp
+```
+
+El módulo `backend/app/utils/email.py` utilizará estas credenciales y realizará `STARTTLS`. Si no se configuran `SMTP_HOST` y `SMTP_PORT`, el envío se desactiva.
+
 ### 3. Iniciar los servicios en el servidor local
 ```bash
 # Backend
@@ -159,6 +171,14 @@ docker-compose exec backend python scripts/seed_data.py
 - **Puertos estables**: Frontend siempre en puerto 3009, backend en puerto 8000
 - **Proxy configurado**: Redirección automática de `/api/*` al backend
 - **Experiencia de usuario mejorada**: URLs consistentes y predecibles
+
+#### Recuperación de contraseña
+- **Frontend**: Páginas `'/auth/forgot-password'` y `'/auth/reset-password'` con validaciones y feedback de estado
+- **Backend**: Endpoints
+  - `POST /api/v1/auth/request-password-reset` con cuerpo `{ email }`, envía enlace con token
+  - `POST /api/v1/auth/reset-password` con cuerpo `{ token, email, new_password, confirm_password }`
+- **Correo**: Enlace generado apunta por defecto a `http://localhost:3009/auth/reset-password`
+- **Seguridad**: Tokens firmados y verificación de email asociada al token
 
 ## 🧪 Desarrollo Local
 
@@ -256,6 +276,13 @@ docker-compose exec frontend npm run test:watch
 - **Frontend**: Usar ESLint y Prettier
 - **Commits**: Usar Conventional Commits
 - **Branches**: `feature/`, `bugfix/`, `hotfix/`
+
+#### Convenciones de Frontend
+- Usar `next/image` para imágenes optimizadas cuando sea posible
+- Encapsular llamadas HTTP con `apiClient` y `API_ENDPOINTS` (`frontend/src/lib/constants.ts`)
+- Evitar `any`; usar tipos y guards (ej. en edición de ítems)
+- Memorizar handlers con `useCallback` en componentes interactivos
+- Priorizar componentes reutilizables en `components/ui` para consistencia
 
 ### Convenciones de Commits (Conventional Commits)
 

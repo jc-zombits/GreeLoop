@@ -22,6 +22,29 @@ flowchart TD
     M --> K
 ```
 
+### 1.1. Flujo de Recuperación de Contraseña
+
+```mermaid
+flowchart TD
+    A[Olvidé mi contraseña] --> B[Página Forgot Password]
+    B --> C[Ingresar email]
+    C --> D{Email válido?}
+    D -->|No| C
+    D -->|Sí| E[Enviar solicitud]
+    E --> F[Backend genera token]
+    F --> G[Enviar correo con enlace]
+    G --> H[Usuario abre enlace]
+    H --> I[Página Reset Password]
+    I --> J[Ingresar nueva contraseña]
+    J --> K{Coinciden?}
+    K -->|No| I
+    K -->|Sí| L[Enviar a backend]
+    L --> M[Verificar token/email]
+    M --> N[Actualizar contraseña]
+    N --> O[Confirmación]
+    O --> P[Redirigir a Login]
+```
+
 ### 2. Flujo de Publicación de Objetos
 
 ```mermaid
