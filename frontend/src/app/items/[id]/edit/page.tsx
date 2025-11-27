@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Upload, X, ArrowLeft, Package } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -54,9 +54,9 @@ export default function EditItem() {
     tags?: string[];
   };
 
-  const isBackendItem = (obj: unknown): obj is BackendItem => {
+  const isBackendItem = useCallback((obj: unknown): obj is BackendItem => {
     return !!obj && typeof (obj as BackendItem).title === 'string';
-  };
+  }, []);
 
   useEffect(() => {
     if (item && categories.length) {
@@ -98,7 +98,7 @@ export default function EditItem() {
         tags: tagsStr,
       });
     }
-  }, [item, categories]);
+  }, [item, categories, isBackendItem]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
