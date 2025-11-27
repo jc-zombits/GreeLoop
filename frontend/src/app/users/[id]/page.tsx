@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { 
@@ -172,10 +173,12 @@ export default function UserProfilePage() {
                   <div className="relative mx-auto mb-4">
                     <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto">
                       {user.avatarUrl ? (
-                        <img 
-                          src={user.avatarUrl} 
+                        <Image 
+                          src={user.avatarUrl}
                           alt={user.fullName}
-                          className="w-24 h-24 rounded-full object-cover"
+                          width={96}
+                          height={96}
+                          className="rounded-full object-cover"
                         />
                       ) : (
                         <User className="h-12 w-12 text-gray-400" />
@@ -289,9 +292,11 @@ export default function UserProfilePage() {
                 {userItems.map((item) => (
                   <Card key={item.id} className="hover:shadow-lg transition-shadow">
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
-                      <img 
-                        src={item.images[0]} 
+                      <Image 
+                        src={item.images[0]}
                         alt={item.name}
+                        width={640}
+                        height={360}
                         className="w-full h-full object-cover"
                       />
                     </div>

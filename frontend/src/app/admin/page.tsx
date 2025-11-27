@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { User, Item, PaginatedResponse, ItemStatus } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -55,7 +55,7 @@ export default function AdminPage() {
     return (allowed.includes(value as AdminStatusCode) ? (value as AdminStatusCode) : '');
   };
 
-  const normalizeItemStatus = (status: unknown): ItemStatus => {
+  const normalizeItemStatus = useCallback((status: unknown): ItemStatus => {
     const backendToLabel: Record<AdminStatusCode, ItemStatus> = {
       AVAILABLE: 'Disponible',
       INACTIVE: 'Inactivo',
@@ -71,7 +71,7 @@ export default function AdminPage() {
       }
     }
     return 'Disponible';
-  };
+  }, []);
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -151,7 +151,7 @@ export default function AdminPage() {
 
     loadUsers();
     loadItems();
-  }, [userParams, itemParams]);
+  }, [userParams, itemParams, normalizeItemStatus]);
 
   const handleDeactivateUser = async (id: string) => {
     try {

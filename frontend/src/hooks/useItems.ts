@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { Item, ItemFilters, PaginatedResponse } from '@/types';
 
@@ -15,7 +15,7 @@ export const useItems = (filters?: ItemFilters) => {
     totalPages: 0
   });
 
-  const fetchItems = async (page: number = 1, newFilters?: ItemFilters) => {
+  const fetchItems = useCallback(async (page: number = 1, newFilters?: ItemFilters) => {
     try {
       setLoading(true);
       setError(null);
@@ -36,11 +36,11 @@ export const useItems = (filters?: ItemFilters) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.limit, filters]);
 
   useEffect(() => {
     fetchItems();
-  }, []);
+  }, [fetchItems]);
 
   const refetch = (newFilters?: ItemFilters) => {
     fetchItems(1, newFilters);
@@ -114,7 +114,7 @@ export const useCreateItem = () => {
       setError(null);
       
       const formData = new FormData();
-      files.forEach((file, index) => {
+      files.forEach((file) => {
         formData.append(`images`, file);
       });
 
@@ -141,7 +141,7 @@ export const useUpdateItem = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const updateItem = async (id: string, itemData: FormData) => {
+  const updateItem = async (id: string, itemData: Partial<{ title: string; description: string; category_id: string; condition: string; estimated_value?: number; location?: string }>) => {
     try {
       setLoading(true);
       setError(null);

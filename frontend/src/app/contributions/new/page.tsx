@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Calendar, MapPin, Package, DollarSign, Clock, Repeat } from 'lucide-react';
+import { ArrowLeft, Save, Calendar, MapPin, Package, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import Link from 'next/link';
@@ -60,7 +60,7 @@ const recurrenceOptions = [
 export default function NewContributionPage() {
   const { user, userType, loading } = useAuth();
   const router = useRouter();
-  const [categories, setCategories] = useState<ContributionCategory[]>(mockCategories);
+  const [categories] = useState<ContributionCategory[]>(mockCategories);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});

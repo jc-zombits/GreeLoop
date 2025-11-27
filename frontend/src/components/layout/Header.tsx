@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Leaf, User, Bell, Settings, LogOut, Plus, MessageCircle, Heart, Search, ChevronDown, Gift, Users, Calendar, BookOpen, MoreHorizontal, Shield } from 'lucide-react';
+import { Menu, X, User, Bell, Settings, LogOut, Plus, Search, ChevronDown, Gift, Users, Calendar, BookOpen, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
-import { isCompany, isUser } from '@/types';
+import { isUser } from '@/types';
 import { cn } from '@/lib/utils';
 
 const publicNavigation = [
@@ -42,7 +43,7 @@ export const Header: React.FC = () => {
   const companyDropdownRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  const { user, userType, logout, loading } = useAuth();
+  const { user, userType, logout } = useAuth();
   const { unreadCount } = useNotifications();
 
   // Cerrar menús al hacer clic fuera
@@ -99,7 +100,7 @@ export const Header: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <img src="/greenloop-logo.svg" alt="GreenLoop" className="h-8 w-8" />
+              <Image src="/greenloop-logo.svg" alt="GreenLoop" width={32} height={32} />
               <span className="text-xl font-bold text-gray-900">GreenLoop</span>
             </Link>
           </div>

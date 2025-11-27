@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, MessageCircle, Plus, User, Clock, ArrowRight, Users } from 'lucide-react';
+import { Search, MessageCircle, Plus, User, ArrowRight, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface Conversation {
@@ -64,8 +64,14 @@ export default function ConversationsPage() {
       
       const data = await response.json();
       
-      // Convertir datos de la API al formato esperado
-      const apiConversations: Conversation[] = data.conversations.map((conv: any) => ({
+      interface ApiConversation {
+        id: string;
+        other_user: { id: number; name: string; username: string; avatar?: string; is_online?: boolean };
+        last_message: { content: string; created_at: string; sender_id: number };
+        unread_count?: number;
+        exchange_info?: { id: number; status: string; item_name: string };
+      }
+      const apiConversations: Conversation[] = (data.conversations as ApiConversation[]).map((conv) => ({
         id: conv.id,
         otherUser: {
           id: conv.other_user.id,
@@ -121,8 +127,15 @@ export default function ConversationsPage() {
       
       const data = await response.json();
       
-      // Convertir datos de la API al formato esperado
-      const apiUsers = data.users.map((user: any) => ({
+      interface ApiUser {
+        id: number;
+        name: string;
+        username: string;
+        email: string;
+        avatar?: string;
+        is_online?: boolean;
+      }
+      const apiUsers = (data.users as ApiUser[]).map((user) => ({
         id: user.id,
         name: user.name,
         username: user.username,

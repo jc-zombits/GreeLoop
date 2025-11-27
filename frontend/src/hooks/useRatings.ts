@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { PaginatedResponse } from '@/types';
 
@@ -13,9 +13,9 @@ interface Rating {
   comment?: string;
   created_at: string;
   updated_at: string;
-  exchange?: any;
-  rater?: any;
-  rated_user?: any;
+  exchange?: unknown;
+  rater?: unknown;
+  rated_user?: unknown;
 }
 
 interface CreateRatingData {
@@ -41,7 +41,8 @@ export const useRatings = (userId?: string) => {
     totalPages: 0
   });
 
-  const fetchRatings = async (page: number = 1, filters?: any) => {
+  type RatingsFilters = Record<string, string | number | boolean | undefined>;
+  const fetchRatings = useCallback(async (page: number = 1, filters?: RatingsFilters) => {
     try {
       setLoading(true);
       setError(null);
@@ -67,7 +68,7 @@ export const useRatings = (userId?: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.limit, userId]);
 
   const loadMore = () => {
     if (pagination.page < pagination.totalPages) {
@@ -75,13 +76,13 @@ export const useRatings = (userId?: string) => {
     }
   };
 
-  const refetch = (filters?: any) => {
+  const refetch = (filters?: RatingsFilters) => {
     fetchRatings(1, filters);
   };
 
   useEffect(() => {
     fetchRatings();
-  }, [userId]);
+  }, [userId, fetchRatings]);
 
   return {
     ratings,
@@ -98,7 +99,7 @@ export const useRating = (id: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRating = async () => {
+  const fetchRating = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -109,13 +110,13 @@ export const useRating = (id: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (id) {
       fetchRating();
     }
-  }, [id]);
+  }, [id, fetchRating]);
 
   const refetch = () => {
     fetchRating();
@@ -216,7 +217,7 @@ export const useUserRatingStats = (userId: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -227,13 +228,13 @@ export const useUserRatingStats = (userId: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     if (userId) {
       fetchStats();
     }
-  }, [userId]);
+  }, [userId, fetchStats]);
 
   const refetch = () => {
     fetchStats();

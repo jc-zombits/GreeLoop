@@ -5,24 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { Upload, X, ArrowLeft, Package } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Item, ItemCondition, ItemStatus } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useItem, useUpdateItem } from '@/hooks/useItems';
 import { useCategories } from '@/hooks/useCategories';
 import { Loading } from '@/components/ui/Loading';
+import type { Item as FrontendItem } from '@/types';
+ 
 
-const categories = [
-  'Electrónicos',
-  'Hogar y Jardín',
-  'Libros y Educación',
-  'Deportes y Ocio',
-  'Ropa y Accesorios',
-  'Vehículos',
-  'Salud y Belleza',
-  'Herramientas',
-  'Música e Instrumentos'
-];
 
 const conditions = [
   'Nuevo',
@@ -32,93 +22,6 @@ const conditions = [
   'Aceptable'
 ];
 
-// Mock data - en una aplicación real, esto vendría de una API
-const mockItems: Item[] = [
-  {
-    id: '1',
-    name: 'Bicicleta de montaña Trek',
-    description: 'Bicicleta Trek en excelente estado, ideal para montaña y senderos. Incluye casco y luces.',
-    category: 'Deportes y Ocio',
-    condition: 'Muy bueno' as ItemCondition,
-    estimatedValue: 450,
-    location: 'Madrid, España',
-    tags: ['bicicleta', 'trek', 'montaña', 'deportes'],
-    status: 'Disponible' as ItemStatus,
-    views: 24,
-    createdAt: '2024-01-15',
-    updatedAt: '2024-01-15',
-    ownerId: '1',
-    images: ['/items/bike1.jpg', '/items/bike2.jpg'],
-    likes: 5,
-    owner: {
-      id: '1',
-      name: 'Ana García',
-      email: 'ana@example.com',
-      location: 'Madrid, España',
-      avatar: '/avatars/ana.jpg',
-      joinDate: '2023-01-01',
-      rating: 4.8,
-      totalExchanges: 12,
-      isVerified: true
-    }
-  },
-  {
-    id: '2',
-    name: 'MacBook Pro 13" 2020',
-    description: 'MacBook Pro en perfecto estado, usado principalmente para trabajo de oficina. Incluye cargador original.',
-    category: 'Electrónicos',
-    condition: 'Como nuevo' as ItemCondition,
-    estimatedValue: 1200,
-    location: 'Barcelona, España',
-    tags: ['macbook', 'apple', 'laptop', 'ordenador'],
-    status: 'Disponible' as ItemStatus,
-    views: 89,
-    createdAt: '2024-01-10',
-    updatedAt: '2024-01-10',
-    ownerId: '2',
-    images: ['/items/macbook1.jpg'],
-    likes: 12,
-    owner: {
-      id: '2',
-      name: 'Carlos Ruiz',
-      email: 'carlos@example.com',
-      location: 'Barcelona, España',
-      avatar: '/avatars/carlos.jpg',
-      joinDate: '2023-02-15',
-      rating: 4.9,
-      totalExchanges: 8,
-      isVerified: true
-    }
-  },
-  {
-    id: '3',
-    name: 'Colección de libros de programación',
-    description: 'Colección de 15 libros sobre programación en diferentes lenguajes. Perfectos para estudiantes.',
-    category: 'Libros y Educación',
-    condition: 'Bueno' as ItemCondition,
-    estimatedValue: 180,
-    location: 'Valencia, España',
-    tags: ['libros', 'programación', 'educación', 'código'],
-    status: 'Disponible' as ItemStatus,
-    views: 45,
-    createdAt: '2024-01-08',
-    updatedAt: '2024-01-08',
-    ownerId: '1',
-    images: ['/items/books1.jpg', '/items/books2.jpg', '/items/books3.jpg'],
-    likes: 8,
-    owner: {
-      id: '1',
-      name: 'Ana García',
-      email: 'ana@example.com',
-      location: 'Madrid, España',
-      avatar: '/avatars/ana.jpg',
-      joinDate: '2023-01-01',
-      rating: 4.8,
-      totalExchanges: 12,
-      isVerified: true
-    }
-  }
-];
 
 export default function EditItem() {
   const params = useParams();
@@ -130,30 +33,72 @@ export default function EditItem() {
   const { updateItem, loading: updating } = useUpdateItem();
   
   const [formData, setFormData] = useState({
-    title: '',
+    name: '',
     description: '',
-    category_id: '',
+    category: '', // category id
     condition: '',
-    estimated_value: '',
+    estimatedValue: '',
     location: '',
     tags: ''
   });
   const [images, setImages] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  type BackendItem = {
+    title: string;
+    description: string;
+    category_id?: string;
+    condition: string;
+    estimated_value?: number;
+    location_description?: string;
+    tags?: string[];
+  };
+
+  const isBackendItem = (obj: unknown): obj is BackendItem => {
+    return !!obj && typeof (obj as BackendItem).title === 'string';
+  };
+
   useEffect(() => {
-    if (item) {
+    if (item && categories.length) {
+      let name = '';
+      let description = '';
+      let condition = '';
+      let estimatedValueStr = '';
+      let locationStr = '';
+      let categoryId = '';
+      let tagsStr = '';
+
+      if (isBackendItem(item)) {
+        name = item.title || '';
+        description = item.description || '';
+        condition = item.condition || '';
+        estimatedValueStr = item.estimated_value !== undefined ? String(item.estimated_value) : '';
+        locationStr = item.location_description || '';
+        categoryId = item.category_id || '';
+        tagsStr = Array.isArray(item.tags) ? item.tags.join(', ') : '';
+      } else {
+        const fi = item as FrontendItem;
+        name = fi.name || '';
+        description = fi.description || '';
+        condition = fi.condition || '';
+        estimatedValueStr = fi.estimatedValue !== undefined ? String(fi.estimatedValue) : '';
+        locationStr = fi.location || '';
+        // Resolver id de categoría por nombre
+        categoryId = categories.find(c => c.name === fi.category)?.id || '';
+        tagsStr = Array.isArray(fi.tags) ? fi.tags.join(', ') : '';
+      }
+
       setFormData({
-        title: item.title,
-        description: item.description,
-        category_id: item.category_id?.toString() || '',
-        condition: item.condition,
-        estimated_value: item.estimated_value?.toString() || '',
-        location: item.location,
-        tags: item.tags?.join(', ') || ''
+        name,
+        description,
+        category: categoryId,
+        condition,
+        estimatedValue: estimatedValueStr,
+        location: locationStr,
+        tags: tagsStr,
       });
     }
-  }, [item]);
+  }, [item, categories]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -176,16 +121,16 @@ export default function EditItem() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.title.trim()) {
-      newErrors.title = 'El título es requerido';
+    if (!formData.name.trim()) {
+      newErrors.name = 'El nombre es requerido';
     }
 
     if (!formData.description.trim()) {
       newErrors.description = 'La descripción es requerida';
     }
 
-    if (!formData.category_id) {
-      newErrors.category_id = 'La categoría es requerida';
+    if (!formData.category) {
+      newErrors.category = 'La categoría es requerida';
     }
 
     if (!formData.condition) {
@@ -208,13 +153,22 @@ export default function EditItem() {
     }
 
     try {
-      const itemData = {
-        ...formData,
-        estimated_value: formData.estimated_value ? parseFloat(formData.estimated_value) : undefined,
-        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : []
+      const payload: {
+        title: string;
+        description: string;
+        category_id: string;
+        condition: string;
+        estimated_value?: number;
+        location?: string;
+      } = {
+        title: formData.name.trim(),
+        description: formData.description,
+        category_id: formData.category,
+        condition: formData.condition,
+        estimated_value: formData.estimatedValue ? parseFloat(formData.estimatedValue) : undefined,
+        location: formData.location || undefined,
       };
-      
-      await updateItem(itemId, itemData, images);
+      await updateItem(itemId, payload);
       router.push('/items');
     } catch (error) {
       console.error('Error al actualizar el ítem:', error);
@@ -304,8 +258,8 @@ export default function EditItem() {
                   }`}
                 >
                   <option value="">Selecciona una categoría</option>
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
                   ))}
                 </select>
                 {errors.category && (
@@ -447,8 +401,8 @@ export default function EditItem() {
                 Cancelar
               </Button>
             </Link>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Actualizando...' : 'Actualizar Ítem'}
+            <Button type="submit" disabled={updating}>
+              {updating ? 'Actualizando...' : 'Actualizar Ítem'}
             </Button>
           </div>
         </form>

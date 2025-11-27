@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Grid, List, Package, Eye, Heart, MapPin } from 'lucide-react';
+import { ArrowLeft, Search, Grid, List, Package, Eye, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import Link from 'next/link';

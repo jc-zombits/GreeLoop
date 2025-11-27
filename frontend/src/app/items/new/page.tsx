@@ -11,17 +11,6 @@ import { useCreateItem } from '@/hooks/useItems';
 import { useCategories } from '@/hooks/useCategories';
 import { Loading } from '@/components/ui/Loading';
 
-const categories = [
-  'Electrónicos',
-  'Hogar y Jardín',
-  'Libros y Educación',
-  'Deportes y Ocio',
-  'Ropa y Accesorios',
-  'Vehículos',
-  'Salud y Belleza',
-  'Herramientas',
-  'Música e Instrumentos'
-];
 
 const conditions = [
   'Nuevo',

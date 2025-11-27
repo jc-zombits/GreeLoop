@@ -1,5 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS } from './constants';
-import { ApiResponse, PaginatedResponse, User, Category, Item, Company } from '@/types';
+import { PaginatedResponse, User, Category, Item, Company } from '@/types';
 
 // Tipos específicos para la API
 interface LoginCredentials {
@@ -385,6 +385,10 @@ export const api = {
       apiClient.post<AuthResponse>(API_ENDPOINTS.AUTH.REGISTER, userData, false),
     me: () => apiClient.get<User>(API_ENDPOINTS.AUTH.ME),
     logout: () => apiClient.post(API_ENDPOINTS.AUTH.LOGOUT),
+    requestPasswordReset: (email: string) =>
+      apiClient.post(API_ENDPOINTS.AUTH.REQUEST_PASSWORD_RESET, { email }, false),
+    resetPassword: (data: { token: string; email: string; new_password: string; confirm_password: string }) =>
+      apiClient.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, data, false),
   },
   
   // Autenticación de empresas

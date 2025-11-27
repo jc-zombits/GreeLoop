@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MapPin, Grid, List } from 'lucide-react';
+import { Search, MapPin, Grid, List } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -172,9 +173,11 @@ const ExplorePage: React.FC = () => {
             {filteredItems.map((item) => (
               <Card key={item.id} className="hover:shadow-lg transition-shadow cursor-pointer">
                 <div className="aspect-w-16 aspect-h-9">
-                  <img
+                  <Image
                     src={item.primary_image_url || '/api/placeholder/300/200'}
                     alt={item.title}
+                    width={640}
+                    height={360}
                     className="w-full h-48 object-cover rounded-t-lg"
                   />
                 </div>

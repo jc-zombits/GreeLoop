@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Eye, Heart, Calendar, MapPin, Building2, Gift, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Heart, Calendar, MapPin, Gift, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import Link from 'next/link';
@@ -78,7 +78,7 @@ export default function ContributionsPage() {
   const { user, userType, loading } = useAuth();
   const router = useRouter();
   const [contributions, setContributions] = useState<Contribution[]>(mockContributions);
-  const [categories, setCategories] = useState<ContributionCategory[]>(mockCategories);
+  const [categories] = useState<ContributionCategory[]>(mockCategories);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');

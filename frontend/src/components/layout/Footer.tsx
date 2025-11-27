@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
-import { Leaf, Mail, Phone, MapPin } from 'lucide-react';
+import Image from 'next/image';
+import { Mail, Phone, MapPin } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -10,7 +11,7 @@ export const Footer: React.FC = () => {
           {/* Logo y descripción */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <img src="/greenloop-logo.svg" alt="GreenLoop" className="h-8 w-8" />
+              <Image src="/greenloop-logo.svg" alt="GreenLoop" width={32} height={32} />
               <span className="text-xl font-bold">GreenLoop</span>
             </div>
             <p className="text-gray-300 mb-4">

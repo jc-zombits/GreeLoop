@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import api from '@/lib/api';
+import { useState, useEffect, useCallback } from 'react';
+import api, { ExchangeData } from '@/lib/api';
 import { Exchange, ExchangeFilters, PaginatedResponse, Message } from '@/types';
 
 export const useExchanges = (filters?: ExchangeFilters) => {
@@ -15,7 +15,7 @@ export const useExchanges = (filters?: ExchangeFilters) => {
     totalPages: 0
   });
 
-  const fetchExchanges = async (page: number = 1, newFilters?: ExchangeFilters) => {
+  const fetchExchanges = useCallback(async (page: number = 1, newFilters?: ExchangeFilters) => {
     try {
       setLoading(true);
       setError(null);
@@ -36,11 +36,11 @@ export const useExchanges = (filters?: ExchangeFilters) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.limit, filters]);
 
   useEffect(() => {
     fetchExchanges();
-  }, []);
+  }, [fetchExchanges]);
 
   const refetch = (newFilters?: ExchangeFilters) => {
     fetchExchanges(1, newFilters);
@@ -67,7 +67,7 @@ export const useExchange = (id: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchExchange = async () => {
+  const fetchExchange = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -78,13 +78,13 @@ export const useExchange = (id: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (id) {
       fetchExchange();
     }
-  }, [id]);
+  }, [id, fetchExchange]);
 
   const refetch = () => {
     fetchExchange();
@@ -97,7 +97,7 @@ export const useCreateExchange = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createExchange = async (exchangeData: any) => {
+  const createExchange = async (exchangeData: ExchangeData) => {
     try {
       setLoading(true);
       setError(null);
@@ -201,7 +201,7 @@ export const useExchangeMessages = (exchangeId: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -212,7 +212,7 @@ export const useExchangeMessages = (exchangeId: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [exchangeId]);
 
   const sendMessage = async (content: string, type: 'text' | 'image' = 'text') => {
     try {
@@ -235,7 +235,7 @@ export const useExchangeMessages = (exchangeId: string) => {
     if (exchangeId) {
       fetchMessages();
     }
-  }, [exchangeId]);
+  }, [exchangeId, fetchMessages]);
 
   const refetch = () => {
     fetchMessages();

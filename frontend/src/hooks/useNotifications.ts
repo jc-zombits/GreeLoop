@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { Notification, PaginatedResponse } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,7 +18,7 @@ export const useNotifications = () => {
     totalPages: 0
   });
 
-  const fetchNotifications = async (page: number = 1, filters?: Record<string, string | number | boolean>) => {
+  const fetchNotifications = useCallback(async (page: number = 1, filters?: Record<string, string | number | boolean>) => {
     // No hacer petición si el usuario no está autenticado o no hay token
     const token = localStorage.getItem('access_token');
     if (!user || authLoading || !token) {
@@ -53,7 +53,7 @@ export const useNotifications = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.limit, user, authLoading]);
 
   const markAsRead = async (id: string) => {
     try {
@@ -114,7 +114,7 @@ export const useNotifications = () => {
       setLoading(false);
       setError(null);
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, fetchNotifications]);
 
   return {
     notifications,
@@ -141,7 +141,7 @@ export const useNotificationSettings = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -152,7 +152,7 @@ export const useNotificationSettings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const updateSettings = async (newSettings: NotificationSettingsType) => {
     try {
@@ -172,7 +172,7 @@ export const useNotificationSettings = () => {
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [fetchSettings]);
 
   return {
     settings,

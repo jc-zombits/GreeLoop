@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Search, Filter, MessageSquare, Send, Package } from 'lucide-react';
+import { ArrowLeft, Search, MessageSquare, Package } from 'lucide-react';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import type { ExchangeData } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
@@ -213,8 +214,7 @@ export default function NewExchangePage() {
       
       alert('¡Propuesta de intercambio enviada exitosamente!');
       
-      // Redirigir a la página de intercambios
-      window.location.href = '/exchanges';
+      router.push('/exchanges');
       
     } catch (error: unknown) {
       console.error('Error creating exchange:', error);
@@ -317,9 +317,11 @@ export default function NewExchangePage() {
                 >
                   <div className="aspect-w-16 aspect-h-9">
                     {item.images && item.images.length > 0 ? (
-                      <img
+                      <Image
                         src={item.images[0]}
                         alt={item.name}
+                        width={640}
+                        height={360}
                         className="w-full h-48 object-cover"
                       />
                     ) : (

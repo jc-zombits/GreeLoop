@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { AlertCircle, X } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Modal } from './Modal';
 import { Button } from './Button';
 

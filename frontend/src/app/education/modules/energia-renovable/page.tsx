@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Sun, Wind, Battery, ArrowLeft, BadgeCheck, CheckCircle } from 'lucide-react';
+import { Sun, Wind, ArrowLeft, BadgeCheck, CheckCircle } from 'lucide-react';
 
 interface QuizQuestion {
   question: string;

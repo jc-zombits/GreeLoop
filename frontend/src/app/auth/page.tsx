@@ -16,7 +16,7 @@ type UserType = 'user' | 'company';
 export default function Auth() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, register, loading, error } = useAuth();
+  const { login, register, loading } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
   const [userType, setUserType] = useState<UserType>('user');
   const [showPassword, setShowPassword] = useState(false);
@@ -366,12 +366,12 @@ export default function Auth() {
                   />
                   <span className="ml-2 text-sm text-gray-600">Recordarme</span>
                 </label>
-                <button
-                  type="button"
+                <Link
+                  href="/auth/forgot-password"
                   className="text-sm text-green-600 hover:text-green-700"
                 >
                   ¿Olvidaste tu contraseña?
-                </button>
+                </Link>
               </div>
               
               <Button

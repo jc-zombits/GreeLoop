@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import api from '@/lib/api';
-import { User, Company, LoginForm, RegisterForm, CompanyLoginForm, CompanyRegisterForm } from '@/types';
+import { User, Company, LoginForm, RegisterForm, CompanyRegisterForm } from '@/types';
 
 interface AuthContextType {
   user: User | Company | null;
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData);
         setUserType('user');
       }
-    } catch (err) {
+    } catch {
       // Token inválido, limpiar
       localStorage.removeItem('access_token');
       localStorage.removeItem('user_type');

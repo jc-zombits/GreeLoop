@@ -177,11 +177,7 @@ const EducationPage: React.FC = () => {
     return { id: m.id, title: m.title, completed, percent };
   });
 
-  const handleModuleComplete = (moduleId: string) => {
-    if (!completedModules.includes(moduleId)) {
-      setCompletedModules([...completedModules, moduleId]);
-    }
-  };
+  
 
   useEffect(() => {
     // Leer módulos completados desde localStorage
@@ -191,9 +187,7 @@ const EducationPage: React.FC = () => {
         const arr = JSON.parse(saved) as string[];
         setCompletedModules(arr);
       }
-    } catch (e) {
-      // Ignorar errores de parsing
-    }
+    } catch {}
   }, []);
 
   return (

@@ -68,6 +68,17 @@ def create_refresh_token(
     )
     return encoded_jwt
 
+def create_password_reset_token(email: str, expires_minutes: int = 60) -> str:
+    to_encode = {"email": email}
+    expire = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
+    to_encode.update({"exp": expire, "type": "password_reset"})
+    encoded_jwt = jwt.encode(
+        to_encode,
+        settings.SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM
+    )
+    return encoded_jwt
+
 def verify_token(
     token: str, 
     token_type: str = "access"

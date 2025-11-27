@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Users, MessageCircle, TrendingUp, Award, MapPin, Calendar, Star, Heart, Plus, Send } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -98,7 +99,7 @@ interface CommunityPost {
 }
 
 const CommunityPage: React.FC = () => {
-  const { isAuthenticated, user, isCommunityMember, joinCommunity } = useAuth();
+  const { isAuthenticated, isCommunityMember, joinCommunity } = useAuth();
   const [stats, setStats] = useState<CommunityStats | null>(null);
   const [topUsers, setTopUsers] = useState<TopUser[]>([]);
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
@@ -553,10 +554,12 @@ const CommunityPage: React.FC = () => {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3">
-                        <img
+                        <Image
                           src={post.author.avatar}
                           alt={post.author.name}
-                          className="w-10 h-10 rounded-full"
+                          width={40}
+                          height={40}
+                          className="rounded-full"
                         />
                         <div>
                           <div className="font-semibold text-gray-900">{post.author.name}</div>
@@ -578,9 +581,11 @@ const CommunityPage: React.FC = () => {
                   <CardContent>
                     <p className="text-gray-700 mb-4">{post.content}</p>
                     {post.image && (
-                      <img
+                      <Image
                         src={post.image}
                         alt="Post image"
+                        width={800}
+                        height={600}
                         className="w-full h-48 object-cover rounded-lg mb-4"
                       />
                     )}
@@ -613,10 +618,12 @@ const CommunityPage: React.FC = () => {
                   <CardContent className="pt-4">
                     <div className="flex items-center space-x-3">
                       <div className="relative">
-                        <img
+                        <Image
                           src={user.avatar}
                           alt={user.name}
-                          className="w-12 h-12 rounded-full"
+                          width={48}
+                          height={48}
+                          className="rounded-full"
                         />
                         <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-600 text-white text-xs rounded-full flex items-center justify-center font-bold">
                           {index + 1}

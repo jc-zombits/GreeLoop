@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, MessageCircle, User, Calendar, Package, MapPin } from 'lucide-react';
+import Image from 'next/image';
 
 interface ExchangeItem {
   id: string;
@@ -250,9 +251,11 @@ export default function ExchangeDetailPage() {
               </h2>
             </div>
             <div className="p-6">
-              <img
+              <Image
                 src={exchange.requester_item.primary_image_url || '/api/placeholder/400/300'}
                 alt={exchange.requester_item.title}
+                width={800}
+                height={600}
                 className="w-full h-48 object-cover rounded-lg mb-4"
               />
               <h3 className="text-xl font-semibold mb-2">{exchange.requester_item.title}</h3>
@@ -285,9 +288,11 @@ export default function ExchangeDetailPage() {
               </h2>
             </div>
             <div className="p-6">
-              <img
+              <Image
                 src={exchange.owner_item.primary_image_url || '/api/placeholder/400/300'}
                 alt={exchange.owner_item.title}
+                width={800}
+                height={600}
                 className="w-full h-48 object-cover rounded-lg mb-4"
               />
               <h3 className="text-xl font-semibold mb-2">{exchange.owner_item.title}</h3>

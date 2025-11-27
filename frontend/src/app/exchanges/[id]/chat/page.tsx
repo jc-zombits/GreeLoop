@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Send, Paperclip, MoreVertical, User } from 'lucide-react';
+import { ArrowLeft, Send, Paperclip, MoreVertical } from 'lucide-react';
+import Image from 'next/image';
 
 interface Message {
   id: number;
@@ -205,10 +206,12 @@ export default function ExchangeChatPage() {
             
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <img
+                <Image
                   src={chatUser?.avatar || '/api/placeholder/40/40'}
-                  alt={chatUser?.full_name}
-                  className="w-10 h-10 rounded-full"
+                  alt={chatUser?.full_name || 'Usuario'}
+                  width={40}
+                  height={40}
+                  className="rounded-full"
                 />
                 {chatUser?.is_online && (
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>

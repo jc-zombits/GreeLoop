@@ -6,7 +6,9 @@ export const API_ENDPOINTS = {
     REGISTER: '/api/v1/auth/register',
     LOGOUT: '/api/v1/auth/logout',
     ME: '/api/v1/auth/me',
-    REFRESH: '/api/v1/auth/refresh'
+    REFRESH: '/api/v1/auth/refresh',
+    REQUEST_PASSWORD_RESET: '/api/v1/auth/request-password-reset',
+    RESET_PASSWORD: '/api/v1/auth/reset-password'
   },
   ADMIN: {
     USERS: '/api/v1/admin/users',

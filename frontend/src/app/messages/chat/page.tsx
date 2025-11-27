@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Send, Search, Users, MessageCircle, Package, User, Clock } from 'lucide-react';
+import { ArrowLeft, Send, MessageCircle, Package, User } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 interface Message {
@@ -38,11 +38,9 @@ interface ItemInfo {
 }
 
 export default function ChatPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [participants, setParticipants] = useState<ChatParticipant[]>([]);
   const [itemInfo, setItemInfo] = useState<ItemInfo | null>(null);
   const [otherUser, setOtherUser] = useState<ChatParticipant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +49,7 @@ export default function ChatPage() {
   // Obtener parámetros de la URL
   const userId = searchParams.get('user_id');
   const exchangeId = searchParams.get('exchange_id');
-  const itemId = searchParams.get('item_id');
+  // const itemId = searchParams.get('item_id');
 
   useEffect(() => {
     const fetchChatData = async () => {
@@ -119,7 +117,14 @@ export default function ChatPage() {
         }
         
         const messagesData = await messagesResponse.json();
-        const apiMessages: Message[] = messagesData.messages.map((msg: any) => ({
+        interface ApiMessage {
+          id: number;
+          content: string;
+          sender: { id: number; name: string; username: string; avatar?: string };
+          created_at: string;
+          message_type: 'text' | 'exchange_proposal' | 'system';
+        }
+        const apiMessages: Message[] = (messagesData.messages as ApiMessage[]).map((msg) => ({
           id: msg.id,
           content: msg.content,
           sender: {

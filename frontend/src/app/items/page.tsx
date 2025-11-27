@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Plus, Search, Grid, List, Eye, Edit, Trash2, Package } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useItems, useDeleteItem } from '@/hooks/useItems';
-import { useAuth } from '@/hooks/useAuth';
+// import { useAuth } from '@/hooks/useAuth';
 import { Loading } from '@/components/ui/Loading';
 import Link from 'next/link';
 
@@ -27,14 +27,14 @@ export default function Items() {
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
-  const { user } = useAuth();
+  // const { user } = useAuth();
   const { data: items = [], isLoading, error } = useItems();
   const deleteItemMutation = useDeleteItem();
 
   const handleDeleteItem = async (itemId: number) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este item?')) {
       try {
-        await deleteItemMutation.mutateAsync(itemId);
+        await deleteItemMutation.deleteItem(String(itemId));
       } catch (error) {
         console.error('Error al eliminar item:', error);
       }
@@ -166,7 +166,7 @@ export default function Items() {
                       size="sm" 
                       className="text-red-600 hover:text-red-700"
                       onClick={() => handleDeleteItem(item.id)}
-                      disabled={deleting}
+                      disabled={deleteItemMutation.loading}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

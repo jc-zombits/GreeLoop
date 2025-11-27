@@ -10,10 +10,7 @@ import {
   Calendar, 
   MapPin, 
   Users, 
-  DollarSign, 
   Tag,
-  Clock,
-  Building2,
   Save,
   Eye
 } from 'lucide-react';

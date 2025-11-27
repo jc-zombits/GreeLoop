@@ -9,12 +9,14 @@ import logging
 
 from app.core.database import get_db
 from app.core.security import (
-    verify_password, 
-    create_access_token, 
+    verify_password,
+    create_access_token,
     create_refresh_token,
     verify_token,
-    get_password_hash
+    get_password_hash,
+    create_password_reset_token
 )
+from app.utils.email import send_email
 from app.core.dependencies import get_current_user, get_optional_current_user
 from app.core.config import settings
 from app.models.admin_user import AdminUser
@@ -582,12 +584,16 @@ async def request_password_reset(
     """Solicitar restablecimiento de contraseña"""
     
     user = db.query(User).filter(User.email == reset_data.email).first()
-    if not user:
-        # Por seguridad, no revelamos si el email existe
-        return {"message": "Si el email existe, se enviará un enlace de restablecimiento"}
-    
-    # TODO: Implementar envío de email de restablecimiento
-    
+    token = create_password_reset_token(reset_data.email)
+    reset_url = f"http://localhost:3009/auth/reset-password?token={token}&email={reset_data.email}"
+    subject = "Recupera tu contraseña en GreenLoop"
+    html_body = f"<p>Para restablecer tu contraseña, haz clic en el siguiente enlace:</p><p><a href='{reset_url}'>Restablecer contraseña</a></p><p>Si no solicitaste este cambio, ignora este mensaje.</p>"
+    text_body = f"Para restablecer tu contraseña, abre este enlace: {reset_url}"
+    try:
+        if user:
+            send_email(reset_data.email, subject, html_body, text_body)
+    except Exception:
+        pass
     return {"message": "Si el email existe, se enviará un enlace de restablecimiento"}
 
 
@@ -598,22 +604,14 @@ async def reset_password(
 ):
     """Restablecer contraseña con token"""
     
-    # TODO: Implementar verificación real con token
-    # Por ahora, restablecemos directamente por email
-    
+    payload = verify_token(reset_data.token, token_type="password_reset")
+    if not payload or payload.get("email") != reset_data.email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token inválido")
     user = db.query(User).filter(User.email == reset_data.email).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuario no encontrado"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
     user.hashed_password = get_password_hash(reset_data.new_password)
     user.updated_at = datetime.utcnow()
-    
-    # Revocar todas las sesiones
     UserSession.revoke_all_user_sessions(db, user.id)
-    
     db.commit()
-    
     return {"message": "Contraseña restablecida exitosamente"}
