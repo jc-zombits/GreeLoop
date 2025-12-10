@@ -19,7 +19,9 @@ export const API_ENDPOINTS = {
     REGISTER: '/api/v1/company-auth/register',
     LOGOUT: '/api/v1/company-auth/logout',
     ME: '/api/v1/company-auth/me',
-    REFRESH: '/api/v1/company-auth/refresh'
+    REFRESH: '/api/v1/company-auth/refresh',
+    REWARDS: '/api/v1/company-auth/me/rewards',
+    REWARDS_RECOMPUTE: '/api/v1/company-auth/me/rewards/recompute'
   },
   USERS: {
     PROFILE: '/api/v1/users/profile',
@@ -27,7 +29,13 @@ export const API_ENDPOINTS = {
     SETTINGS: '/api/v1/users/settings',
     MY_ITEMS: '/api/v1/users/me/items',
     MY_EXCHANGES: '/api/v1/users/me/exchanges',
-    STATS: '/api/v1/users/profile/stats'
+    STATS: '/api/v1/users/profile/stats',
+    REWARDS: '/api/v1/users/profile/rewards',
+    REWARDS_RECOMPUTE: '/api/v1/users/profile/rewards/recompute',
+    REWARDS_REDEEM: '/api/v1/users/profile/rewards/redeem'
+    ,REWARDS_CATALOG: '/api/v1/users/profile/rewards/catalog'
+    ,REWARDS_REDEMPTIONS: '/api/v1/users/profile/rewards/redemptions'
+    ,REWARDS_REDEMPTIONS_LIST: '/api/v1/users/profile/rewards/redemptions/list'
   },
   ITEMS: {
     LIST: '/api/v1/items',

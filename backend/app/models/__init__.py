@@ -15,6 +15,8 @@ from .company_session import CompanySession
 from .contribution import Contribution, ContributionStatus, DeliveryMethod
 from .contribution_category import ContributionCategory
 from .contribution_image import ContributionImage
+from .reward_event import RewardEvent
+from .reward import Reward
 
 # Exportar todos los modelos
 __all__ = [
@@ -43,5 +45,7 @@ __all__ = [
     "ContributionStatus",
     "DeliveryMethod",
     "ContributionCategory",
-    "ContributionImage"
+    "ContributionImage",
+    "RewardEvent",
+    "Reward"
 ]

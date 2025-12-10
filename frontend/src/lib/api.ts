@@ -443,6 +443,8 @@ export const api = {
     me: () => apiClient.get<Company>(API_ENDPOINTS.COMPANY_AUTH.ME),
     logout: () => apiClient.post(API_ENDPOINTS.COMPANY_AUTH.LOGOUT),
     refresh: () => apiClient.post(API_ENDPOINTS.COMPANY_AUTH.REFRESH),
+    getRewards: () => apiClient.get<{ points: number; tier: string; next_tier_at: number }>(API_ENDPOINTS.COMPANY_AUTH.REWARDS),
+    recomputeRewards: () => apiClient.put<Company>(API_ENDPOINTS.COMPANY_AUTH.REWARDS_RECOMPUTE, {}),
   },
 
   // Usuarios
@@ -460,6 +462,37 @@ export const api = {
       return apiClient.get(`${API_ENDPOINTS.USERS.MY_EXCHANGES}${query}`);
     },
     getStats: () => apiClient.get<UserStatsResponse>(`${API_ENDPOINTS.USERS.STATS}`),
+    getRewards: () => apiClient.get<{ points: number; tier: string; next_tier_at: number }>(API_ENDPOINTS.USERS.REWARDS),
+    recomputeRewards: () => apiClient.put<User>(API_ENDPOINTS.USERS.REWARDS_RECOMPUTE, {}),
+    redeemReward: (data: { reward_id: string }) =>
+      apiClient.post<{ success: boolean; points_remaining: number; tier: string; message: string }>(
+        API_ENDPOINTS.USERS.REWARDS_REDEEM,
+        data
+      ),
+    getRewardsCatalog: () => apiClient.get<Array<{
+      id: string;
+      name: string;
+      description?: string;
+      category?: string;
+      image_url?: string;
+      points_cost: number;
+      tier_required?: string;
+      stock: number;
+      active: boolean;
+    }>>(API_ENDPOINTS.USERS.REWARDS_CATALOG),
+    getRewardRedemptionsSummary: () => apiClient.get<{ total_points_redeemed: number; redemptions: Array<{ reward_id?: string; reward_name?: string; points_cost: number; created_at: string; category?: string }> }>(
+      API_ENDPOINTS.USERS.REWARDS_REDEMPTIONS
+    ),
+    getRewardRedemptionsList: (page = 1, page_size = 20) => {
+      const query = `?page=${page}&page_size=${page_size}`;
+      return apiClient.get<{
+        items: Array<{ reward_id?: string; reward_name?: string; points_cost: number; created_at: string; category?: string }>;
+        total: number;
+        page: number;
+        page_size: number;
+        total_pages: number;
+      }>(`${API_ENDPOINTS.USERS.REWARDS_REDEMPTIONS_LIST}${query}`);
+    },
     getById: (id: string) => apiClient.get<User>(`/api/v1/users/${id}`),
   },
 

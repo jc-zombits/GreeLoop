@@ -40,6 +40,8 @@ class User(Base):
     reputation_score = Column(Float, default=0.0, nullable=False)
     total_exchanges = Column(Integer, default=0, nullable=False)
     successful_exchanges = Column(Integer, default=0, nullable=False)
+    reward_points = Column(Integer, default=0, nullable=False)
+    reward_tier = Column(String(20), default='Bronce', nullable=False)
     
     # Configuraciones de privacidad
     show_phone = Column(Boolean, default=False, nullable=False)

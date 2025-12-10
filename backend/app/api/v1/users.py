@@ -21,6 +21,8 @@ from app.models.user import User
 from app.models.item import Item, ItemStatus
 from app.models.exchange import Exchange, ExchangeStatus
 from app.models.rating import Rating
+from app.models.reward_event import RewardEvent
+from app.models.reward import Reward
 from app.schemas.user import (
     UserResponse,
     UserDetailResponse,
@@ -29,7 +31,14 @@ from app.schemas.user import (
     UserListItem,
     UserStats,
     UserSearchParams,
-    UserSearchResponse
+    UserSearchResponse,
+    UserRewards,
+    RewardRedeemRequest,
+    RewardRedeemResponse,
+    RewardCatalogItem,
+    RewardRedemptionSummary,
+    RewardRedemptionItem,
+    RewardRedemptionListResponse
 )
 from app.schemas.item import ItemListItem
 from app.schemas.exchange import ExchangeListItem
@@ -241,6 +250,287 @@ async def get_user_stats(
         reputation_score=current_user.reputation_score,
         total_ratings=total_ratings,
         average_rating=round(float(avg_rating), 2)
+    )
+
+
+@router.get("/profile/rewards", response_model=UserRewards)
+async def get_user_rewards(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    total_items = (await db.execute(
+        select(func.count()).select_from(Item).where(Item.owner_id == current_user.id)
+    )).scalar() or 0
+    completed_exchanges = (await db.execute(
+        select(func.count()).select_from(Exchange).where(
+            ((Exchange.requester_id == current_user.id) |
+             (Exchange.owner_id == current_user.id)) &
+            (Exchange.status == ExchangeStatus.COMPLETED)
+        )
+    )).scalar() or 0
+    avg_rating = (await db.execute(
+        select(func.avg(Rating.overall_rating)).where(Rating.rated_id == current_user.id)
+    )).scalar() or 0
+    points = int(completed_exchanges * 50 + total_items * 10 + float(avg_rating) * 20)
+    tier = 'Bronce'
+    next_tier_at = 100
+    if points >= 100 and points < 300:
+        tier = 'Plata'
+        next_tier_at = 300
+    elif points >= 300 and points < 600:
+        tier = 'Oro'
+        next_tier_at = 600
+    elif points >= 600:
+        tier = 'Platino'
+        next_tier_at = points + 100
+    return UserRewards(points=points, tier=tier, next_tier_at=next_tier_at)
+
+
+@router.put("/profile/rewards/recompute", response_model=UserResponse)
+async def recompute_and_persist_user_rewards(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    total_items = db.query(func.count()).select_from(Item).filter(Item.owner_id == current_user.id).scalar() or 0
+    completed_exchanges = db.query(func.count()).select_from(Exchange).filter(
+        ((Exchange.requester_id == current_user.id) |
+         (Exchange.owner_id == current_user.id)) &
+        (Exchange.status == ExchangeStatus.COMPLETED)
+    ).scalar() or 0
+    avg_rating = db.query(func.avg(Rating.overall_rating)).filter(Rating.rated_id == current_user.id).scalar() or 0
+    points = int(completed_exchanges * 50 + total_items * 10 + float(avg_rating or 0) * 20)
+    tier = 'Bronce'
+    if points >= 100 and points < 300:
+        tier = 'Plata'
+    elif points >= 300 and points < 600:
+        tier = 'Oro'
+    elif points >= 600:
+        tier = 'Platino'
+    old_points = current_user.reward_points or 0
+    old_tier = current_user.reward_tier or 'Bronce'
+    current_user.reward_points = points
+    current_user.reward_tier = tier
+    current_user.updated_at = datetime.utcnow()
+    event = RewardEvent(
+        actor_id=current_user.id,
+        actor_type='user',
+        event_type='recompute',
+        points_delta=int(points - old_points),
+        points_total=points,
+        tier_before=old_tier,
+        tier_after=tier,
+        description='Recomputación de recompensas de usuario',
+        meta=None
+    )
+    db.add(event)
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.post("/profile/rewards/redeem", response_model=RewardRedeemResponse)
+async def redeem_user_reward(
+    redeem: RewardRedeemRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    reward = (await db.execute(select(Reward).where(Reward.id == redeem.reward_id))).scalar_one_or_none()
+    if not reward or not reward.active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recompensa no disponible")
+
+    now = datetime.utcnow()
+    if reward.starts_at and reward.starts_at > now:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recompensa aún no disponible")
+    if reward.ends_at and reward.ends_at < now:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recompensa expirada")
+    if reward.stock <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Sin stock disponible")
+
+    # Validar tier
+    tier_required = (reward.tier_required or 'Bronce').lower()
+    tiers = ['bronce', 'plata', 'oro', 'platino']
+    user_tier = (current_user.reward_tier or 'Bronce').lower()
+    if tiers.index(user_tier) < tiers.index(tier_required):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nivel insuficiente para canjear esta recompensa")
+
+    # Validar puntos
+    cost = int(reward.points_cost or 0)
+    if cost <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Costo inválido")
+    current_points = int(current_user.reward_points or 0)
+    if current_points < cost:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Puntos insuficientes")
+
+    # Descontar puntos y stock
+    new_points = current_points - cost
+    reward.stock = int(reward.stock) - 1
+
+    # Recalcular tier según puntos restantes
+    new_tier = 'Bronce'
+    if 100 <= new_points < 300:
+        new_tier = 'Plata'
+    elif 300 <= new_points < 600:
+        new_tier = 'Oro'
+    elif new_points >= 600:
+        new_tier = 'Platino'
+
+    before_tier = current_user.reward_tier or 'Bronce'
+    current_user.reward_points = new_points
+    current_user.reward_tier = new_tier
+    current_user.updated_at = now
+
+    event = RewardEvent(
+        actor_id=current_user.id,
+        actor_type='user',
+        event_type='redeem',
+        points_delta=-cost,
+        points_total=new_points,
+        tier_before=before_tier,
+        tier_after=new_tier,
+        description=f'Canje de recompensa {str(reward.id)}',
+        meta=__import__('json').dumps({
+            "reward_id": str(reward.id),
+            "reward_name": reward.name,
+            "category": reward.category,
+            "cost": cost
+        })
+    )
+    db.add(event)
+    await db.commit()
+    await db.refresh(current_user)
+
+    return RewardRedeemResponse(
+        success=True,
+        points_remaining=new_points,
+        tier=new_tier,
+        message="Canje realizado exitosamente"
+    )
+
+
+@router.get("/profile/rewards/catalog", response_model=List[RewardCatalogItem])
+async def get_rewards_catalog(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    now = datetime.utcnow()
+    result = await db.execute(select(Reward).where(Reward.active == True))
+    rewards = result.scalars().all()
+
+    filtered = []
+    for r in rewards:
+        if r.starts_at and r.starts_at > now:
+            continue
+        if r.ends_at and r.ends_at < now:
+            continue
+        if r.stock is not None and r.stock <= 0:
+            continue
+        filtered.append(r)
+
+    return filtered
+
+
+@router.get("/profile/rewards/redemptions", response_model=RewardRedemptionSummary)
+async def get_user_redemptions_summary(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(RewardEvent)
+        .where(
+            (RewardEvent.actor_id == current_user.id) &
+            (RewardEvent.actor_type == 'user') &
+            (RewardEvent.event_type == 'redeem')
+        )
+        .order_by(RewardEvent.created_at.desc())
+    )
+    events = result.scalars().all()
+
+    total_redeemed = 0
+    redemptions: list[RewardRedemptionItem] = []
+    import json
+    for e in events:
+        cost = abs(int(e.points_delta or 0))
+        total_redeemed += cost
+        reward_id = None
+        reward_name = None
+        category = None
+        try:
+            meta = json.loads(e.meta) if e.meta else None
+            if isinstance(meta, dict):
+                reward_id = meta.get('reward_id')
+                reward_name = meta.get('reward_name')
+                category = meta.get('category')
+        except Exception:
+            pass
+        redemptions.append(RewardRedemptionItem(
+            reward_id=reward_id,
+            reward_name=reward_name,
+            category=category,
+            points_cost=cost,
+            created_at=e.created_at
+        ))
+
+    return RewardRedemptionSummary(
+        total_points_redeemed=total_redeemed,
+        redemptions=redemptions[:10]
+    )
+
+
+@router.get("/profile/rewards/redemptions/list", response_model=RewardRedemptionListResponse)
+async def get_rewards_redemptions_list(
+    current_user: User = Depends(get_current_active_user),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    base_where = (
+        (RewardEvent.actor_id == current_user.id) &
+        (RewardEvent.actor_type == 'user') &
+        (RewardEvent.event_type == 'redeem')
+    )
+    total_result = await db.execute(
+        select(func.count()).select_from(RewardEvent).where(base_where)
+    )
+    total = total_result.scalar() or 0
+    result = await db.execute(
+        select(RewardEvent)
+        .where(base_where)
+        .order_by(RewardEvent.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    events = result.scalars().all()
+
+    items: list[RewardRedemptionItem] = []
+    import json
+    for e in events:
+        cost = abs(int(e.points_delta or 0))
+        reward_id = None
+        reward_name = None
+        category = None
+        try:
+            meta = json.loads(e.meta) if e.meta else None
+            if isinstance(meta, dict):
+                reward_id = meta.get('reward_id')
+                reward_name = meta.get('reward_name')
+                category = meta.get('category')
+        except Exception:
+            pass
+        items.append(RewardRedemptionItem(
+            reward_id=reward_id,
+            reward_name=reward_name,
+            category=category,
+            points_cost=cost,
+            created_at=e.created_at
+        ))
+
+    total_pages = (total + page_size - 1) // page_size
+    return RewardRedemptionListResponse(
+        items=items,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
     )
 
 

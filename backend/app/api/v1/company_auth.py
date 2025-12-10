@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from typing import Optional
 from datetime import datetime, timedelta
 import traceback
@@ -27,7 +27,9 @@ from app.schemas.company_auth import (
     CompanyLogoutRequest,
     CompanyLogoutResponse
 )
-from app.schemas.company import CompanyResponse
+from app.schemas.company import CompanyResponse, CompanyRewards
+from app.models.contribution import Contribution, ContributionStatus
+from app.models.reward_event import RewardEvent
 
 router = APIRouter()
 security = HTTPBearer(auto_error=False)
@@ -365,10 +367,99 @@ async def get_current_company_info(
         reputation_score=current_company.reputation_score,
         total_exchanges=current_company.total_exchanges,
         successful_exchanges=current_company.successful_exchanges,
+        reward_points=current_company.reward_points,
+        reward_tier=current_company.reward_tier,
         created_at=current_company.created_at,
         updated_at=current_company.updated_at,
         last_login=current_company.last_login
     )
+
+@router.get("/me/rewards", response_model=CompanyRewards)
+async def get_company_rewards(
+    current_company: Company = Depends(get_current_company),
+    db: AsyncSession = Depends(get_db)
+):
+    total_contributions = (await db.execute(
+        select(func.count()).select_from(Contribution).where(Contribution.company_id == current_company.id)
+    )).scalar() or 0
+    active_contributions = (await db.execute(
+        select(func.count()).select_from(Contribution).where(
+            (Contribution.company_id == current_company.id) &
+            (Contribution.status == ContributionStatus.ACTIVE)
+        )
+    )).scalar() or 0
+    completed_contributions = (await db.execute(
+        select(func.count()).select_from(Contribution).where(
+            (Contribution.company_id == current_company.id) &
+            (Contribution.status == ContributionStatus.COMPLETED)
+        )
+    )).scalar() or 0
+
+    points = int(active_contributions * 20 + completed_contributions * 100 + float(current_company.reputation_score or 0) * 30)
+    tier = 'Bronce'
+    next_tier_at = 100
+    if points >= 100 and points < 300:
+        tier = 'Plata'
+        next_tier_at = 300
+    elif points >= 300 and points < 600:
+        tier = 'Oro'
+        next_tier_at = 600
+    elif points >= 600:
+        tier = 'Platino'
+        next_tier_at = points + 100
+
+    return CompanyRewards(points=points, tier=tier, next_tier_at=next_tier_at)
+
+@router.put("/me/rewards/recompute", response_model=CompanyResponse)
+async def recompute_and_persist_company_rewards(
+    current_company: Company = Depends(get_current_company),
+    db: AsyncSession = Depends(get_db)
+):
+    active_contributions = (await db.execute(
+        select(func.count()).select_from(Contribution).where(
+            (Contribution.company_id == current_company.id) &
+            (Contribution.status == ContributionStatus.ACTIVE)
+        )
+    )).scalar() or 0
+    completed_contributions = (await db.execute(
+        select(func.count()).select_from(Contribution).where(
+            (Contribution.company_id == current_company.id) &
+            (Contribution.status == ContributionStatus.COMPLETED)
+        )
+    )).scalar() or 0
+
+    points = int(active_contributions * 20 + completed_contributions * 100 + float(current_company.reputation_score or 0) * 30)
+    tier = 'Bronce'
+    if points >= 100 and points < 300:
+        tier = 'Plata'
+    elif points >= 300 and points < 600:
+        tier = 'Oro'
+    elif points >= 600:
+        tier = 'Platino'
+
+    old_points = current_company.reward_points or 0
+    old_tier = current_company.reward_tier or 'Bronce'
+
+    current_company.reward_points = points
+    current_company.reward_tier = tier
+    current_company.updated_at = datetime.utcnow()
+
+    event = RewardEvent(
+        actor_id=current_company.id,
+        actor_type='company',
+        event_type='recompute',
+        points_delta=int(points - old_points),
+        points_total=points,
+        tier_before=old_tier,
+        tier_after=tier,
+        description='Recomputación de recompensas de empresa',
+        meta=None
+    )
+    db.add(event)
+
+    await db.commit()
+    await db.refresh(current_company)
+    return current_company
 
 @router.post("/logout", response_model=CompanyLogoutResponse)
 async def logout_company(

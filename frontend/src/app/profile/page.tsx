@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/hooks/useAuth';
 import { isUser } from '@/types';
 import api from '@/lib/api';
+import { Badge } from '@/components/ui/Badge';
 
 type ActivityItem = { id: string; type: 'exchange' | 'item' | 'review'; description: string; date: string; status?: string };
 type ItemListLite = { id: string; title?: string; name?: string; created_at?: string; createdAt?: string; status?: string; status_display?: string };
@@ -19,6 +20,7 @@ export default function Profile() {
   const [showSettings, setShowSettings] = useState(false);
   const [stats, setStats] = useState<{ total_items: number; total_exchanges: number; average_rating: number } | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [rewards, setRewards] = useState<{ points: number; tier: string; next_tier_at: number } | null>(null);
   
   // Inicializar estados con valores por defecto
   const [userInfo, setUserInfo] = useState({
@@ -52,8 +54,9 @@ export default function Profile() {
     const load = async () => {
       try {
         if (!user) return;
-        const [s, myItems, myExchanges] = await Promise.all([
+        const [s, r, myItems, myExchanges] = await Promise.all([
           api.users.getStats(),
+          api.users.getRewards(),
           api.users.getMyItems({ page: 1, page_size: 5 }),
           api.users.getMyExchanges({ page: 1, page_size: 5 })
         ]);
@@ -62,6 +65,7 @@ export default function Profile() {
           total_exchanges: s.total_exchanges ?? (user.total_exchanges ?? 0),
           average_rating: s.average_rating ?? (user.reputation_score ?? 0)
         });
+        setRewards(r);
         const items: ActivityItem[] = Array.isArray(myItems)
           ? (myItems as unknown[]).map((raw) => {
               const it = raw as ItemListLite;
@@ -92,6 +96,7 @@ export default function Profile() {
         console.error('Error cargando estadísticas/actividad:', e);
         setStats(null);
         setActivity([]);
+        setRewards(null);
       }
     };
     load();
@@ -244,6 +249,36 @@ export default function Profile() {
 
           {/* Stats Sidebar */}
           <div className="space-y-6">
+            {rewards && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Recompensas</h2>
+                  <Badge variant="success">{rewards.tier}</Badge>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Puntos</span>
+                    <span className="font-semibold text-gray-900">{rewards.points}</span>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 mb-2">Progreso al siguiente nivel</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      {(() => {
+                        const currentBase = rewards.tier === 'Bronce' ? 0 : rewards.tier === 'Plata' ? 100 : rewards.tier === 'Oro' ? 300 : 600;
+                        const nextBase = rewards.next_tier_at;
+                        const progress = Math.max(0, Math.min(100, Math.round(((rewards.points - currentBase) / (nextBase - currentBase)) * 100)));
+                        return <div className="bg-green-600 h-2 rounded-full" style={{ width: `${progress}%` }} />;
+                      })()}
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Nivel actual</span>
+                      <span>{rewards.next_tier_at} pts</span>
+                    </div>
+                  </div>
+                  <Button onClick={() => api.users.recomputeRewards()} className="w-full">Recalcular</Button>
+                </div>
+              </div>
+            )}
             {/* Stats Cards */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-6">Estadísticas</h2>

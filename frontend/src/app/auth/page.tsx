@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import { ErrorModal } from '@/components/ui/ErrorModal';
-import { SuccessModal } from '@/components/ui/SuccessModal';
 
 type AuthMode = 'login' | 'register';
 type UserType = 'user' | 'company';
@@ -23,8 +22,6 @@ export default function Auth() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorModalMessage, setErrorModalMessage] = useState('');
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successModalMessage, setSuccessModalMessage] = useState('');
 
   // Detectar el modo desde los parámetros de consulta
   useEffect(() => {
@@ -166,24 +163,17 @@ export default function Auth() {
     
     try {
       await login(loginForm, loginForm.user_type);
-      
-      // Mostrar mensaje de éxito según el tipo de usuario
       const successMessage = userType === 'company' 
         ? 'Inicio de sesión exitoso. Bienvenido/a de nuevo.'
         : 'Inicio de sesión exitoso. Bienvenido/a de nuevo.';
-      
-      // Mostrar modal de éxito antes de redirigir
-      setSuccessModalMessage(successMessage);
-      setShowSuccessModal(true);
-      
-      // Redirigir al dashboard correspondiente después de un breve retraso
-      setTimeout(() => {
-        if (loginForm.user_type === 'company') {
-          router.push('/company-dashboard');
-        } else {
-          router.push('/dashboard');
-        }
-      }, 2000);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('flash_success', successMessage);
+      }
+      if (loginForm.user_type === 'company') {
+        router.replace('/company-dashboard');
+      } else {
+        router.replace('/dashboard');
+      }
     } catch (err) {
       console.error('Login error:', err);
       
@@ -220,24 +210,17 @@ export default function Auth() {
     
     try {
       await register(registerForm, userType);
-      
-      // Mostrar mensaje de éxito según el tipo de usuario
       const successMessage = userType === 'company' 
         ? 'Empresa registrada exitosamente. Bienvenido/a al dashboard.'
         : 'Cuenta creada exitosamente. Bienvenido/a al dashboard.';
-      
-      // Mostrar modal de éxito antes de redirigir
-      setSuccessModalMessage(successMessage);
-      setShowSuccessModal(true);
-      
-      // Redirigir al dashboard correspondiente después de un breve retraso
-      setTimeout(() => {
-        if (userType === 'company') {
-          router.push('/company-dashboard');
-        } else {
-          router.push('/dashboard');
-        }
-      }, 2000);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('flash_success', successMessage);
+      }
+      if (userType === 'company') {
+        router.replace('/company-dashboard');
+      } else {
+        router.replace('/dashboard');
+      }
     } catch (err) {
       console.error('Register error:', err);
       // Extraer el mensaje de error específico
@@ -271,11 +254,6 @@ export default function Auth() {
         message={errorModalMessage}
       />
       
-      <SuccessModal
-        isOpen={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        message={successModalMessage}
-      />
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">

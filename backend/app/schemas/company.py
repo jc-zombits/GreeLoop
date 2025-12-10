@@ -89,6 +89,8 @@ class CompanyResponse(CompanyBase):
     reputation_score: float
     total_exchanges: int
     successful_exchanges: int
+    reward_points: int
+    reward_tier: str
     created_at: datetime
     updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
@@ -117,6 +119,11 @@ class CompanyPublicProfile(BaseModel):
     
     class Config:
         orm_mode = True
+
+class CompanyRewards(BaseModel):
+    points: int
+    tier: str
+    next_tier_at: int
 
 class CompanyListItem(BaseModel):
     id: uuid.UUID

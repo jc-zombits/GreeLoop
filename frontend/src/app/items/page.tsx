@@ -11,15 +11,24 @@ import Link from 'next/link';
 // Datos estáticos removidos - ahora usamos el hook useItems
 
 const statusColors = {
-  'available': 'bg-green-100 text-green-800',
-  'exchanging': 'bg-yellow-100 text-yellow-800',
-  'exchanged': 'bg-gray-100 text-gray-800'
+  available: 'bg-green-100 text-green-800',
+  exchanging: 'bg-yellow-100 text-yellow-800',
+  exchanged: 'bg-gray-100 text-gray-800',
 };
 
 const statusLabels = {
-  'available': 'Disponible',
-  'exchanging': 'En intercambio',
-  'exchanged': 'Intercambiado'
+  available: 'Disponible',
+  exchanging: 'En intercambio',
+  exchanged: 'Intercambiado',
+};
+
+const getStatusClass = (status: string) => {
+  const key = status.toLowerCase();
+  if (statusColors[key as keyof typeof statusColors]) return statusColors[key as keyof typeof statusColors];
+  if (status === 'Disponible') return statusColors.available;
+  if (status === 'En intercambio') return statusColors.exchanging;
+  if (status === 'Intercambiado') return statusColors.exchanged;
+  return 'bg-gray-100 text-gray-800';
 };
 
 export default function Items() {
@@ -28,10 +37,10 @@ export default function Items() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
   // const { user } = useAuth();
-  const { data: items = [], isLoading, error } = useItems();
+  const { items = [], loading, error } = useItems();
   const deleteItemMutation = useDeleteItem();
 
-  const handleDeleteItem = async (itemId: number) => {
+  const handleDeleteItem = async (itemId: string) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este item?')) {
       try {
         await deleteItemMutation.deleteItem(String(itemId));
@@ -41,7 +50,7 @@ export default function Items() {
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return <Loading />;
   }
 
@@ -57,9 +66,9 @@ export default function Items() {
   }
 
   const filteredItems = items.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (item.category_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (item.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (item.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (item.category || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'Todos' || item.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -137,25 +146,25 @@ export default function Items() {
                 </div>
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">{item.title}</h3>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[item.status as keyof typeof statusColors]}`}>
+                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">{item.name}</h3>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(item.status)}`}>
                       {statusLabels[item.status as keyof typeof statusLabels] || item.status}
                     </span>
                   </div>
                   <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
                   <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
-                    <span>{item.category_name || 'Sin categoría'}</span>
+                    <span>{item.category || 'Sin categoría'}</span>
                     <div className="flex items-center">
                       <Eye className="h-4 w-4 mr-1" />
                       {item.views || 0}
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Link href={`/items/${item.id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full">
-                        Ver
-                      </Button>
-                    </Link>
+                      <Link href={`/items/${item.id}`} className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full">
+                          Ver
+                        </Button>
+                      </Link>
                     <Link href={`/items/${item.id}/edit`}>
                       <Button variant="ghost" size="sm">
                         <Edit className="h-4 w-4" />
@@ -181,25 +190,25 @@ export default function Items() {
               {filteredItems.map((item) => (
                 <div key={item.id} className="p-6 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <Package className="h-8 w-8 text-gray-400" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-lg font-semibold text-gray-900">{item.title}</h3>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[item.status as keyof typeof statusColors]}`}>
-                            {statusLabels[item.status as keyof typeof statusLabels] || item.status}
-                          </span>
+                      <div className="flex items-center space-x-4">
+                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                          <Package className="h-8 w-8 text-gray-400" />
                         </div>
-                        <p className="text-gray-600 mt-1">{item.description}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-lg font-semibold text-gray-900 truncate">{item.name}</h3>
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(item.status)}`}>
+                              {statusLabels[item.status as keyof typeof statusLabels] || item.status}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 mt-1 line-clamp-2">{item.description}</p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                          <span>{item.category_name || 'Sin categoría'}</span>
+                          <span>{item.category || 'Sin categoría'}</span>
                           <div className="flex items-center">
                             <Eye className="h-4 w-4 mr-1" />
                             {item.views || 0} vistas
                           </div>
-                          <span>Publicado: {item.created_at}</span>
+                          <span>Publicado: {item.createdAt}</span>
                         </div>
                       </div>
                     </div>
@@ -219,7 +228,7 @@ export default function Items() {
                         size="sm" 
                         className="text-red-600 hover:text-red-700"
                         onClick={() => handleDeleteItem(item.id)}
-                        disabled={deleting}
+                        disabled={deleteItemMutation.loading}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

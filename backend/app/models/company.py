@@ -53,6 +53,8 @@ class Company(Base):
     reputation_score = Column(Float, default=0.0, nullable=False)
     total_exchanges = Column(Integer, default=0, nullable=False)
     successful_exchanges = Column(Integer, default=0, nullable=False)
+    reward_points = Column(Integer, default=0, nullable=False)
+    reward_tier = Column(String(20), default='Bronce', nullable=False)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

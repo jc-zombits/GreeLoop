@@ -152,6 +152,8 @@ class UserResponse(BaseModel):
     total_exchanges: int
     successful_exchanges: int
     success_rate: float
+    reward_points: int
+    reward_tier: str
     
     # Timestamps
     created_at: datetime
@@ -180,6 +182,53 @@ class UserDetailResponse(UserResponse):
     
     # Timestamps adicionales
     updated_at: datetime
+
+class UserRewards(BaseModel):
+    points: int
+    tier: str
+    next_tier_at: int
+
+class RewardRedeemRequest(BaseModel):
+    reward_id: str
+    points_cost: int
+
+class RewardRedeemResponse(BaseModel):
+    success: bool
+    points_remaining: int
+    tier: str
+    message: str
+
+class RewardCatalogItem(BaseModel):
+    id: UUID
+    name: str
+    description: str | None = None
+    category: str | None = None
+    image_url: str | None = None
+    points_cost: int
+    tier_required: str | None = None
+    stock: int
+    active: bool
+
+    class Config:
+        from_attributes = True
+
+class RewardRedemptionItem(BaseModel):
+    reward_id: UUID | None = None
+    reward_name: str | None = None
+    category: str | None = None
+    points_cost: int
+    created_at: datetime
+
+class RewardRedemptionSummary(BaseModel):
+    total_points_redeemed: int
+    redemptions: List[RewardRedemptionItem]
+
+class RewardRedemptionListResponse(BaseModel):
+    items: List[RewardRedemptionItem]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
 
 # Esquema para perfil público
 class UserPublicProfile(BaseModel):

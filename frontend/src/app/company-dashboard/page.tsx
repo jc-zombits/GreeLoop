@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Toast } from '@/components/ui/Toast';
 import { Plus, Heart, Users, TrendingUp, Eye, Building2, Gift, Calendar, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import { isCompany } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
+import { Badge } from '@/components/ui/Badge';
 
 // Estadísticas específicas para empresas
 const companyStats = [
@@ -43,6 +46,9 @@ export default function CompanyDashboard() {
   const { user, userType, loading } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const [flashMessage, setFlashMessage] = useState<string | null>(null);
+  const [rewards, setRewards] = useState<{ points: number; tier: string; next_tier_at: number } | null>(null);
+  const [rewardsLoading, setRewardsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (!loading) {
@@ -53,6 +59,34 @@ export default function CompanyDashboard() {
       setIsLoading(false);
     }
   }, [user, userType, loading, router]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const msg = sessionStorage.getItem('flash_success');
+      if (msg) {
+        setFlashMessage(msg);
+        sessionStorage.removeItem('flash_success');
+        setTimeout(() => setFlashMessage(null), 4000);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchRewards = async () => {
+      if (!user || userType !== 'company') return;
+      try {
+        setRewardsLoading(true);
+        const data = await api.companyAuth.getRewards();
+        setRewards(data);
+      } catch (err) {
+        // Silenciar errores de forma no intrusiva en el dashboard
+        console.error('Error cargando recompensas de empresa:', err);
+      } finally {
+        setRewardsLoading(false);
+      }
+    };
+    fetchRewards();
+  }, [user, userType]);
 
   if (loading || isLoading) {
     return (
@@ -70,6 +104,14 @@ export default function CompanyDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {flashMessage && (
+          <Toast
+            message={flashMessage}
+            onClose={() => setFlashMessage(null)}
+            duration={4000}
+            variant="success"
+          />
+        )}
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -108,6 +150,59 @@ export default function CompanyDashboard() {
               Solicitudes Recibidas
             </Button>
           </Link>
+        </div>
+
+        {/* Rewards Section */}
+        <div className="mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Recompensas</h2>
+              {rewards ? (
+                <Badge variant="success">{rewards.tier}</Badge>
+              ) : (
+                <Badge variant="default">{rewardsLoading ? 'Cargando…' : 'Bronce'}</Badge>
+              )}
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm text-gray-600">Puntos</span>
+                <span className="font-semibold text-gray-900">{rewards ? rewards.points : 0}</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Progreso al siguiente nivel</p>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  {(() => {
+                    const tier = rewards?.tier || 'Bronce';
+                    const points = rewards?.points || 0;
+                    const nextAt = rewards?.next_tier_at || 100;
+                    const currentBase = tier === 'Bronce' ? 0 : tier === 'Plata' ? 100 : tier === 'Oro' ? 300 : 600;
+                    const progress = Math.max(0, Math.min(100, Math.round(((points - currentBase) / (nextAt - currentBase)) * 100)));
+                    return <div className="bg-green-600 h-2 rounded-full" style={{ width: `${progress}%` }} />;
+                  })()}
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Nivel actual</span>
+                  <span>{rewards ? rewards.next_tier_at : 100} pts</span>
+                </div>
+              </div>
+              <Button
+                onClick={async () => {
+                  try {
+                    await api.companyAuth.recomputeRewards();
+                    const data = await api.companyAuth.getRewards();
+                    setRewards(data);
+                    setFlashMessage('Recompensas recalculadas');
+                    setTimeout(() => setFlashMessage(null), 4000);
+                  } catch (err) {
+                    console.error('Error al recalcular recompensas:', err);
+                  }
+                }}
+                className="w-full"
+              >
+                Recalcular
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Stats Grid */}

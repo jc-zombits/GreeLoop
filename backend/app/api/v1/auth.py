@@ -387,6 +387,8 @@ async def get_current_user_info(
         "total_exchanges": current_user.total_exchanges,
         "successful_exchanges": current_user.successful_exchanges,
         "success_rate": current_user.success_rate,
+        "reward_points": current_user.reward_points,
+        "reward_tier": current_user.reward_tier,
         "created_at": current_user.created_at,
         "last_login": current_user.last_login,
         "is_admin": is_admin,

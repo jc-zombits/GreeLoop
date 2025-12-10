@@ -6,6 +6,7 @@ import os
 
 from .core.config import settings
 from .core.database import engine, create_tables, check_database_connection, Base
+from . import models  # Importar modelos para registrar tablas antes de crear
 from .api.v1 import api_router
 
 @asynccontextmanager
