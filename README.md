@@ -316,7 +316,7 @@ Al crear un tag `vX.Y.Z` y pushearlo, el workflow `Changelog & Release` publicar
 - [ ] Testing y deploy
 
 ### Fase 2: Mejoras (8 semanas)
-- [ ] Sistema de recompensas
+- [x] Sistema de recompensas
 - [ ] Integración con ONGs
 - [ ] Servicios ecológicos
 - [ ] App móvil
