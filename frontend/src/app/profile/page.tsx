@@ -6,42 +6,19 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/hooks/useAuth';
+import { isUser } from '@/types';
+import api from '@/lib/api';
 
-const userStats = [
-  { label: 'Items Publicados', value: 24, icon: Package },
-  { label: 'Intercambios Realizados', value: 18, icon: ArrowUpDown },
-  { label: 'Calificación Promedio', value: 4.8, icon: Star },
-  { label: 'Miembro desde', value: 'Enero 2023', icon: Calendar }
-];
-
-const recentActivity = [
-  {
-    id: 1,
-    type: 'exchange',
-    description: 'Intercambio completado: Bicicleta por Guitarra',
-    date: '2024-01-15',
-    status: 'completed'
-  },
-  {
-    id: 2,
-    type: 'item',
-    description: 'Nuevo item publicado: Cámara Digital Canon',
-    date: '2024-01-12',
-    status: 'active'
-  },
-  {
-    id: 3,
-    type: 'review',
-    description: 'Nueva reseña recibida de @maria_lopez',
-    date: '2024-01-10',
-    status: 'positive'
-  }
-];
+type ActivityItem = { id: string; type: 'exchange' | 'item' | 'review'; description: string; date: string; status?: string };
+type ItemListLite = { id: string; title?: string; name?: string; created_at?: string; createdAt?: string; status?: string; status_display?: string };
+type ExchangeListLite = { id: string; status?: string; status_display?: string; created_at?: string; updated_at?: string; createdAt?: string; updatedAt?: string };
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [stats, setStats] = useState<{ total_items: number; total_exchanges: number; average_rating: number } | null>(null);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
   
   // Inicializar estados con valores por defecto
   const [userInfo, setUserInfo] = useState({
@@ -55,10 +32,10 @@ export default function Profile() {
   const [editForm, setEditForm] = useState(userInfo);
 
   // Actualizar estados cuando el usuario esté disponible
-   useEffect(() => {
+  useEffect(() => {
     if (user) {
       const userData = {
-        name: user.full_name || user.first_name || user.username || '',
+        name: user.full_name || (isUser(user) ? user.first_name : user.full_name) || user.username || '',
         email: user.email || '',
         phone: user.phone || '',
         location: user.city || '',
@@ -68,6 +45,56 @@ export default function Profile() {
       setUserInfo(userData);
       setEditForm(userData);
     }
+  }, [user]);
+
+  // Cargar estadísticas y actividad recientes reales
+  useEffect(() => {
+    const load = async () => {
+      try {
+        if (!user) return;
+        const [s, myItems, myExchanges] = await Promise.all([
+          api.users.getStats(),
+          api.users.getMyItems({ page: 1, page_size: 5 }),
+          api.users.getMyExchanges({ page: 1, page_size: 5 })
+        ]);
+        setStats({
+          total_items: s.total_items ?? 0,
+          total_exchanges: s.total_exchanges ?? (user.total_exchanges ?? 0),
+          average_rating: s.average_rating ?? (user.reputation_score ?? 0)
+        });
+        const items: ActivityItem[] = Array.isArray(myItems)
+          ? (myItems as unknown[]).map((raw) => {
+              const it = raw as ItemListLite;
+              return {
+                id: String(it.id),
+                type: 'item',
+                description: `Nuevo item publicado: ${it.title ?? it.name ?? 'Item'}`,
+                date: it.created_at ?? it.createdAt ?? '',
+                status: it.status_display ?? it.status
+              };
+            })
+          : [];
+        const exchanges: ActivityItem[] = Array.isArray(myExchanges)
+          ? (myExchanges as unknown[]).map((raw) => {
+              const ex = raw as ExchangeListLite;
+              return {
+                id: String(ex.id),
+                type: 'exchange',
+                description: `Intercambio ${ex.status_display ?? ex.status ?? ''}`,
+                date: ex.updated_at ?? ex.created_at ?? ex.updatedAt ?? ex.createdAt ?? '',
+                status: ex.status_display ?? ex.status
+              };
+            })
+          : [];
+        const combined = [...items, ...exchanges].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setActivity(combined);
+      } catch (e) {
+        console.error('Error cargando estadísticas/actividad:', e);
+        setStats(null);
+        setActivity([]);
+      }
+    };
+    load();
   }, [user]);
   
   // Si no hay usuario autenticado, mostrar mensaje
@@ -187,27 +214,31 @@ export default function Profile() {
             {/* Recent Activity */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-6">Actividad Reciente</h2>
-              <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${
-                      activity.status === 'completed' ? 'bg-green-500' :
-                      activity.status === 'active' ? 'bg-blue-500' :
-                      'bg-yellow-500'
-                    }`} />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-900">{activity.description}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(activity.date).toLocaleDateString('es-ES', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
+              {activity.length === 0 ? (
+                <p className="text-sm text-gray-600">No hay actividad reciente aún.</p>
+              ) : (
+                <div className="space-y-4">
+                  {activity.map((a) => (
+                    <div key={a.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50">
+                      <div className={`w-2 h-2 rounded-full mt-2 ${
+                        a.status === 'completed' || a.status === 'Completado' ? 'bg-green-500' :
+                        a.status === 'active' || a.status === 'Disponible' ? 'bg-blue-500' :
+                        'bg-yellow-500'
+                      }`} />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-900">{a.description}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(a.date).toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -217,22 +248,34 @@ export default function Profile() {
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-6">Estadísticas</h2>
               <div className="space-y-4">
-                {userStats.map((stat, index) => {
-                  const Icon = stat.icon;
-                  return (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <Icon className="h-5 w-5 text-green-600" />
-                        <span className="text-sm text-gray-600">{stat.label}</span>
-                      </div>
-                      <span className="font-semibold text-gray-900">
-                        {typeof stat.value === 'number' && stat.label.includes('Calificación') 
-                          ? `${stat.value}/5` 
-                          : stat.value}
-                      </span>
-                    </div>
-                  );
-                })}
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <Package className="h-5 w-5 text-green-600" />
+                    <span className="text-sm text-gray-600">Items Publicados</span>
+                  </div>
+                  <span className="font-semibold text-gray-900">{stats?.total_items ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <ArrowUpDown className="h-5 w-5 text-green-600" />
+                    <span className="text-sm text-gray-600">Intercambios Realizados</span>
+                  </div>
+                  <span className="font-semibold text-gray-900">{stats?.total_exchanges ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <Star className="h-5 w-5 text-green-600" />
+                    <span className="text-sm text-gray-600">Calificación Promedio</span>
+                  </div>
+                  <span className="font-semibold text-gray-900">{stats?.average_rating ?? 0}/5</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <Calendar className="h-5 w-5 text-green-600" />
+                    <span className="text-sm text-gray-600">Miembro desde</span>
+                  </div>
+                  <span className="font-semibold text-gray-900">{userInfo.joinDate || '-'}</span>
+                </div>
               </div>
             </div>
 

@@ -104,6 +104,16 @@ interface UserSettings {
   privacy_level?: string;
 }
 
+interface UserStatsResponse {
+  total_items: number;
+  active_items: number;
+  total_exchanges: number;
+  completed_exchanges: number;
+  success_rate: number;
+  average_rating: number;
+  total_ratings: number;
+}
+
 interface ItemData {
   title: string;
   description: string;
@@ -158,6 +168,35 @@ interface NotificationSettings {
   new_messages?: boolean;
 }
 
+// Backend notifications response types
+interface NotificationListItemResponse {
+  id: string;
+  title: string;
+  message: string;
+  notification_type: string;
+  priority: string;
+  is_read: boolean;
+  action_url?: string;
+  action_text?: string;
+  created_at: string;
+  priority_display: string;
+  type_display: string;
+  time_ago: string;
+}
+
+interface NotificationSearchResponse {
+  notifications: NotificationListItemResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+  unread_count: number;
+  high_priority_count: number;
+  expired_count: number;
+}
+
 interface RatingData {
   exchange_id: number;
   rating: number;
@@ -183,15 +222,18 @@ class ApiClient {
 
   constructor() {
     this.baseURL = API_BASE_URL;
-    this.defaultHeaders = {
-      'Content-Type': 'application/json',
-    };
+    this.defaultHeaders = {};
   }
 
   // Obtener token de autenticación
   private getAuthToken(): string | null {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('access_token');
+      const lsToken = localStorage.getItem('access_token');
+      if (lsToken) return lsToken;
+      const cookies = document.cookie.split(';').map(c => c.trim());
+      const authCookie = cookies.find(c => c.startsWith('auth_token='));
+      if (authCookie) return authCookie.split('=')[1];
+      return null;
     }
     return null;
   }
@@ -225,6 +267,7 @@ class ApiClient {
         ...headers,
         ...options.headers,
       },
+      credentials: includeAuth ? 'include' : 'same-origin'
     };
 
     try {
@@ -412,6 +455,11 @@ export const api = {
       const query = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
       return apiClient.get<PaginatedResponse<Item>>(`${API_ENDPOINTS.USERS.MY_ITEMS}${query}`);
     },
+    getMyExchanges: (params?: { status?: string; role?: 'requester' | 'owner' | 'any'; page?: number; page_size?: number }) => {
+      const query = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
+      return apiClient.get(`${API_ENDPOINTS.USERS.MY_EXCHANGES}${query}`);
+    },
+    getStats: () => apiClient.get<UserStatsResponse>(`${API_ENDPOINTS.USERS.STATS}`),
     getById: (id: string) => apiClient.get<User>(`/api/v1/users/${id}`),
   },
 
@@ -481,7 +529,7 @@ export const api = {
   notifications: {
     list: (params?: NotificationParams) => {
       const query = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
-      return apiClient.get(`${API_ENDPOINTS.NOTIFICATIONS.LIST}${query}`);
+      return apiClient.get<NotificationSearchResponse>(`${API_ENDPOINTS.NOTIFICATIONS.LIST}${query}`);
     },
     markAsRead: (id: string) => apiClient.put(`${API_ENDPOINTS.NOTIFICATIONS.LIST}/${id}/read`),
     markAllAsRead: () => apiClient.put(`${API_ENDPOINTS.NOTIFICATIONS.LIST}/read-all`),

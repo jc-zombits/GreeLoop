@@ -25,7 +25,9 @@ export const API_ENDPOINTS = {
     PROFILE: '/api/v1/users/profile',
     UPDATE: '/api/v1/users/update',
     SETTINGS: '/api/v1/users/settings',
-    MY_ITEMS: '/api/v1/users/me/items'
+    MY_ITEMS: '/api/v1/users/me/items',
+    MY_EXCHANGES: '/api/v1/users/me/exchanges',
+    STATS: '/api/v1/users/profile/stats'
   },
   ITEMS: {
     LIST: '/api/v1/items',

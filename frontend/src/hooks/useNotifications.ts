@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import { Notification, PaginatedResponse } from '@/types';
+import { Notification } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 
 export const useNotifications = () => {
@@ -18,6 +18,32 @@ export const useNotifications = () => {
     totalPages: 0
   });
 
+  type NotificationSearchResponse = {
+    notifications: Array<{
+      id: string;
+      title: string;
+      message: string;
+      notification_type: string;
+      priority: string;
+      is_read: boolean;
+      action_url?: string;
+      action_text?: string;
+      created_at: string;
+      priority_display: string;
+      type_display: string;
+      time_ago: string;
+    }>;
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+    unread_count: number;
+    high_priority_count: number;
+    expired_count: number;
+  };
+
   const fetchNotifications = useCallback(async (page: number = 1, filters?: Record<string, string | number | boolean>) => {
     // No hacer petición si el usuario no está autenticado o no hay token
     const token = localStorage.getItem('access_token');
@@ -31,29 +57,52 @@ export const useNotifications = () => {
       
       const params = {
         page,
-        limit: pagination.limit,
+        limit: pagination?.limit ?? 20,
         ...filters
       };
 
-      const response = await api.notifications.list(params) as PaginatedResponse<Notification>;
-      
+      const response: NotificationSearchResponse = await api.notifications.list(params);
+      const items: Notification[] = response.notifications.map(n => {
+        const t = typeof n.notification_type === 'string' ? n.notification_type.toLowerCase() : '';
+        let type: Notification['type'] = 'system';
+        if (t.includes('exchange') && t.includes('request')) type = 'exchange_proposal';
+        else if (t.includes('exchange') && t.includes('accepted')) type = 'exchange_accepted';
+        else if (t.includes('exchange') && t.includes('rejected')) type = 'exchange_rejected';
+        else if (t.includes('exchange') && t.includes('completed')) type = 'exchange_completed';
+        else if (t.includes('message')) type = 'new_message';
+        return {
+          id: n.id,
+          userId: user?.id || '',
+          type,
+          title: n.title,
+          message: n.message,
+          data: undefined,
+          read: n.is_read,
+          createdAt: n.created_at,
+        };
+      });
+
       if (page === 1) {
-        setNotifications(response.data);
+        setNotifications(items);
       } else {
-        setNotifications(prev => [...prev, ...response.data]);
+        setNotifications(prev => [...prev, ...items]);
       }
-      
-      setPagination(response.pagination);
-      
-      // Calcular notificaciones no leídas
-      const unread = response.data.filter(n => !n.read).length;
+
+      setPagination(prev => ({
+        page: response.page ?? page,
+        limit: response.page_size ?? (prev?.limit ?? 20),
+        total: response.total ?? (prev?.total ?? 0),
+        totalPages: response.total_pages ?? (prev?.totalPages ?? 0)
+      }));
+
+      const unread = items.filter(n => n.read === false).length;
       setUnreadCount(unread);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar notificaciones');
     } finally {
       setLoading(false);
     }
-  }, [pagination.limit, user, authLoading]);
+  }, [pagination?.limit, user, authLoading]);
 
   const markAsRead = async (id: string) => {
     try {

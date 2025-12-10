@@ -1,5 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from typing import Optional, List
 from uuid import UUID
 import os
@@ -15,8 +18,8 @@ from app.core.dependencies import (
 )
 from app.core.config import settings
 from app.models.user import User
-from app.models.item import Item
-from app.models.exchange import Exchange
+from app.models.item import Item, ItemStatus
+from app.models.exchange import Exchange, ExchangeStatus
 from app.models.rating import Rating
 from app.schemas.user import (
     UserResponse,
@@ -169,54 +172,75 @@ async def delete_avatar(
 @router.get("/profile/stats", response_model=UserStats)
 async def get_user_stats(
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Obtener estadísticas del usuario"""
     
     # Contar ítems
-    total_items = db.query(Item).filter(Item.owner_id == current_user.id).count()
-    active_items = db.query(Item).filter(
-        Item.owner_id == current_user.id,
-        Item.is_available_for_exchange == True
-    ).count()
+    total_items = (await db.execute(
+        select(func.count()).select_from(Item).where(Item.owner_id == current_user.id)
+    )).scalar() or 0
+    active_items = (await db.execute(
+        select(func.count()).select_from(Item).where(
+            (Item.owner_id == current_user.id) &
+            (Item.is_active == True) &
+            (Item.status == ItemStatus.AVAILABLE)
+        )
+    )).scalar() or 0
     
     # Contar intercambios
-    total_exchanges = db.query(Exchange).filter(
-        (Exchange.requester_id == current_user.id) | 
-        (Exchange.owner_id == current_user.id)
-    ).count()
+    total_exchanges = (await db.execute(
+        select(func.count()).select_from(Exchange).where(
+            (Exchange.requester_id == current_user.id) |
+            (Exchange.owner_id == current_user.id)
+        )
+    )).scalar() or 0
     
-    completed_exchanges = db.query(Exchange).filter(
-        (Exchange.requester_id == current_user.id) | 
-        (Exchange.owner_id == current_user.id),
-        Exchange.status == "completed"
-    ).count()
+    completed_exchanges = (await db.execute(
+        select(func.count()).select_from(Exchange).where(
+            ((Exchange.requester_id == current_user.id) |
+             (Exchange.owner_id == current_user.id)) &
+            (Exchange.status == ExchangeStatus.COMPLETED)
+        )
+    )).scalar() or 0
+    
+    pending_exchanges = (await db.execute(
+        select(func.count()).select_from(Exchange).where(
+            ((Exchange.requester_id == current_user.id) |
+             (Exchange.owner_id == current_user.id)) &
+            (Exchange.status.in_([
+                ExchangeStatus.PENDING,
+                ExchangeStatus.ACCEPTED,
+                ExchangeStatus.COUNTER_OFFERED,
+                ExchangeStatus.CONFIRMED,
+                ExchangeStatus.IN_PROGRESS
+            ]))
+        )
+    )).scalar() or 0
     
     # Calcular tasa de éxito
     success_rate = (completed_exchanges / total_exchanges * 100) if total_exchanges > 0 else 0
     
     # Obtener calificación promedio
-    avg_rating = db.query(Rating).filter(
-        Rating.rated_user_id == current_user.id
-    ).with_entities(
-        db.func.avg(Rating.overall_rating)
-    ).scalar() or 0
+    avg_rating = (await db.execute(
+        select(func.avg(Rating.overall_rating)).where(Rating.rated_id == current_user.id)
+    )).scalar() or 0
     
     # Contar calificaciones
-    total_ratings = db.query(Rating).filter(
-        Rating.rated_user_id == current_user.id
-    ).count()
+    total_ratings = (await db.execute(
+        select(func.count()).select_from(Rating).where(Rating.rated_id == current_user.id)
+    )).scalar() or 0
     
     return UserStats(
         total_items=total_items,
         active_items=active_items,
         total_exchanges=total_exchanges,
-        completed_exchanges=completed_exchanges,
+        successful_exchanges=completed_exchanges,
+        pending_exchanges=pending_exchanges,
         success_rate=round(success_rate, 2),
-        average_rating=round(float(avg_rating), 2),
+        reputation_score=current_user.reputation_score,
         total_ratings=total_ratings,
-        member_since=current_user.created_at,
-        last_active=current_user.updated_at
+        average_rating=round(float(avg_rating), 2)
     )
 
 
@@ -265,8 +289,8 @@ async def get_user_items(
     offset = (page - 1) * page_size
     items = db.query(Item).filter(
         Item.owner_id == user_id,
-        Item.is_available_for_exchange == True,
-        Item.status == "active"
+        Item.is_active == True,
+        Item.status == ItemStatus.AVAILABLE
     ).offset(offset).limit(page_size).all()
     
     return items
@@ -307,9 +331,9 @@ async def search_users(
     # Filtrar por calificación mínima
     if search_params.min_rating:
         # Subconsulta para obtener usuarios con calificación mínima
-        rated_users = db.query(Rating.rated_user_id).group_by(Rating.rated_user_id).having(
-            db.func.avg(Rating.overall_rating) >= search_params.min_rating
-        ).subquery()
+        rated_users = db.query(Rating.rated_id).group_by(Rating.rated_id).having(
+                db.func.avg(Rating.overall_rating) >= search_params.min_rating
+            ).subquery()
         query = query.filter(User.id.in_(rated_users))
     
     # Contar total
@@ -329,11 +353,11 @@ async def search_users(
     elif search_params.sort_by == "rating":
         # Ordenar por calificación promedio
         if search_params.sort_order == "desc":
-            query = query.outerjoin(Rating, User.id == Rating.rated_user_id).group_by(User.id).order_by(
+            query = query.outerjoin(Rating, User.id == Rating.rated_id).group_by(User.id).order_by(
                 db.func.coalesce(db.func.avg(Rating.overall_rating), 0).desc()
             )
         else:
-            query = query.outerjoin(Rating, User.id == Rating.rated_user_id).group_by(User.id).order_by(
+            query = query.outerjoin(Rating, User.id == Rating.rated_id).group_by(User.id).order_by(
                 db.func.coalesce(db.func.avg(Rating.overall_rating), 0).asc()
             )
     
@@ -361,24 +385,58 @@ async def get_my_items(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Obtener ítems del usuario actual"""
     
-    query = db.query(Item).filter(Item.owner_id == current_user.id)
+    stmt = select(Item).where(Item.owner_id == current_user.id).options(
+        selectinload(Item.owner),
+        selectinload(Item.category),
+        selectinload(Item.images)
+    )
     
     # Filtrar por estado si se especifica
     if status:
-        query = query.filter(Item.status == status)
+        try:
+            status_enum = ItemStatus(status)
+            stmt = stmt.where(Item.status == status_enum)
+        except ValueError:
+            pass
     
     # Ordenar por fecha de creación (más recientes primero)
-    query = query.order_by(Item.created_at.desc())
+    stmt = stmt.order_by(Item.created_at.desc())
     
     # Paginación
     offset = (page - 1) * page_size
-    items = query.offset(offset).limit(page_size).all()
+    stmt = stmt.offset(offset).limit(page_size)
+    result = await db.execute(stmt)
+    items = result.scalars().all()
     
-    return items
+    item_list = []
+    for item in items:
+        item_list.append(ItemListItem(
+            id=item.id,
+            title=item.title,
+            condition=item.condition,
+            estimated_value=item.estimated_value,
+            city=item.owner.city if getattr(item, 'owner', None) else None,
+            state=item.owner.state if getattr(item, 'owner', None) else None,
+            status=item.status,
+            view_count=getattr(item, 'views_count', 0),
+            interest_count=getattr(item, 'exchange_requests_count', 0),
+            created_at=item.created_at,
+            primary_image_url=item.main_image_url,
+            owner_username=item.owner.username if getattr(item, 'owner', None) else "Usuario",
+            owner_rating=item.owner.reputation_score if getattr(item, 'owner', None) else 0.0,
+            category_name=item.category.name if getattr(item, 'category', None) else "General",
+            category_icon=item.category.icon if getattr(item, 'category', None) else None,
+            category_color=item.category.color if getattr(item, 'category', None) else None,
+            distance_km=None,
+            condition_display=item.condition_display,
+            status_display=item.status_display
+        ))
+    
+    return item_list
 
 
 @router.get("/me/exchanges", response_model=List[ExchangeListItem])
@@ -388,36 +446,64 @@ async def get_my_exchanges(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Obtener intercambios del usuario actual"""
     
-    query = db.query(Exchange)
+    stmt = select(Exchange)
     
     # Filtrar por rol del usuario
     if role == "requester":
-        query = query.filter(Exchange.requester_id == current_user.id)
+        stmt = stmt.where(Exchange.requester_id == current_user.id)
     elif role == "owner":
-        query = query.filter(Exchange.owner_id == current_user.id)
+        stmt = stmt.where(Exchange.owner_id == current_user.id)
     else:
         # Cualquier rol (por defecto)
-        query = query.filter(
+        stmt = stmt.where(
             (Exchange.requester_id == current_user.id) |
             (Exchange.owner_id == current_user.id)
         )
     
     # Filtrar por estado si se especifica
     if status:
-        query = query.filter(Exchange.status == status)
+        try:
+            status_enum = ExchangeStatus(status)
+            stmt = stmt.where(Exchange.status == status_enum)
+        except ValueError:
+            pass
     
     # Ordenar por fecha de actualización (más recientes primero)
-    query = query.order_by(Exchange.updated_at.desc())
+    stmt = stmt.order_by(Exchange.updated_at.desc())
     
     # Paginación
     offset = (page - 1) * page_size
-    exchanges = query.offset(offset).limit(page_size).all()
+    stmt = stmt.offset(offset).limit(page_size)
+    result = await db.execute(stmt)
+    exchanges = result.scalars().all()
     
-    return exchanges
+    exchange_list = []
+    for exchange in exchanges:
+        other_user_id = exchange.requester_id if exchange.requester_id != current_user.id else exchange.owner_id
+        exchange_list.append(ExchangeListItem(
+            id=exchange.id,
+            status=exchange.status,
+            requester_item_title=getattr(exchange.requested_item, 'title', 'Item solicitado'),
+            requester_item_image=None,
+            owner_item_title=getattr(exchange.offered_item, 'title', 'Item ofrecido'),
+            owner_item_image=None,
+            other_user_id=other_user_id,
+            other_user_username="Usuario",
+            other_user_rating=None,
+            proposed_cash_difference=None,
+            meeting_date=exchange.meeting_datetime,
+            created_at=exchange.created_at,
+            updated_at=exchange.updated_at,
+            status_display=exchange.status_display,
+            requires_action=False,
+            days_since_created=0
+        ))
+    
+    return exchange_list
 
 
 @router.put("/me/settings/privacy")
