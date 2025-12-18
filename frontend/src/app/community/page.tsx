@@ -6,6 +6,7 @@ import { Users, MessageCircle, TrendingUp, Award, MapPin, Calendar, Star, Heart,
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
+import { API_BASE_URL } from '@/lib/constants';
 
 interface AuthUser {
   name: string;
@@ -121,7 +122,7 @@ const CommunityPage: React.FC = () => {
         setLoading(true);
         
         // Obtener estadísticas de la comunidad desde la API
-        const statsResponse = await fetch('http://localhost:8000/api/v1/community/stats');
+        const statsResponse = await fetch(`${API_BASE_URL}/api/v1/community/stats`);
         if (!statsResponse.ok) {
           throw new Error('Error al obtener estadísticas de la comunidad');
         }
@@ -135,7 +136,7 @@ const CommunityPage: React.FC = () => {
         };
 
         // Obtener usuarios destacados desde la API
-        const usersResponse = await fetch('http://localhost:8000/api/v1/community/top-users?limit=10');
+        const usersResponse = await fetch(`${API_BASE_URL}/api/v1/community/top-users?limit=10`);
         if (!usersResponse.ok) {
           throw new Error('Error al obtener usuarios destacados');
         }
@@ -152,7 +153,7 @@ const CommunityPage: React.FC = () => {
         }));
 
         // Obtener posts de la comunidad desde la API
-        const postsResponse = await fetch('http://localhost:8000/api/v1/community/posts?page=1&limit=10');
+        const postsResponse = await fetch(`${API_BASE_URL}/api/v1/community/posts?page=1&limit=10`);
         let communityPosts: CommunityPost[] = [];
         
         if (postsResponse.ok) {

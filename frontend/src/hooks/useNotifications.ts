@@ -76,7 +76,11 @@ export const useNotifications = () => {
           type,
           title: n.title,
           message: n.message,
-          data: undefined,
+          data: {
+            actionUrl: n.action_url,
+            actionText: n.action_text,
+            rawType: n.notification_type
+          },
           read: n.is_read,
           createdAt: n.created_at,
         };

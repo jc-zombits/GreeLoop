@@ -2,44 +2,96 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Grid, List, Package, Eye, MapPin } from 'lucide-react';
+import { ArrowLeft, Search, Grid, List, Package, Eye, MapPin, Home, Book, Gamepad2, Shirt, Car, Heart, Wrench, Music } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import Link from 'next/link';
+import { Card, CardContent } from '@/components/ui/Card';
+import Image from 'next/image';
+import api from '@/lib/api';
+import { Item, Category } from '@/types';
 
-interface Item {
-  id: number;
-  name: string;
-  description: string;
-  condition: string;
-  status: string;
-  estimatedValue: number;
-  views: number;
-  createdAt: string;
-  owner: {
-    id: number;
-    name: string;
-    username: string;
-    location?: string;
-    rating: number;
-  };
-  images: string[];
-}
+// Static categories for fallback/metadata
+const STATIC_CATEGORIES = [
+  {
+    id: 1,
+    name: 'Electrónicos',
+    description: 'Dispositivos, gadgets y tecnología',
+    icon: Package,
+    color: 'bg-blue-100 text-blue-600'
+  },
+  {
+    id: 2,
+    name: 'Hogar y Jardín',
+    description: 'Muebles, decoración y herramientas de jardín',
+    icon: Home,
+    color: 'bg-green-100 text-green-600'
+  },
+  {
+    id: 3,
+    name: 'Libros y Educación',
+    description: 'Libros, material educativo y cursos',
+    icon: Book,
+    color: 'bg-purple-100 text-purple-600'
+  },
+  {
+    id: 4,
+    name: 'Deportes y Ocio',
+    description: 'Equipamiento deportivo y entretenimiento',
+    icon: Gamepad2,
+    color: 'bg-orange-100 text-orange-600'
+  },
+  {
+    id: 5,
+    name: 'Ropa y Accesorios',
+    description: 'Vestimenta, zapatos y complementos',
+    icon: Shirt,
+    color: 'bg-pink-100 text-pink-600'
+  },
+  {
+    id: 6,
+    name: 'Vehículos',
+    description: 'Bicicletas, patinetes y accesorios',
+    icon: Car,
+    color: 'bg-red-100 text-red-600'
+  },
+  {
+    id: 7,
+    name: 'Salud y Belleza',
+    description: 'Productos de cuidado personal',
+    icon: Heart,
+    color: 'bg-rose-100 text-rose-600'
+  },
+  {
+    id: 8,
+    name: 'Herramientas',
+    description: 'Herramientas de trabajo y bricolaje',
+    icon: Wrench,
+    color: 'bg-gray-100 text-gray-600'
+  },
+  {
+    id: 9,
+    name: 'Música e Instrumentos',
+    description: 'Instrumentos musicales y equipos de audio',
+    icon: Music,
+    color: 'bg-indigo-100 text-indigo-600'
+  }
+];
 
-interface Category {
-  id: number;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  itemCount: number;
-}
+// Helper to safely render icons if they are strings or components
+const IconRenderer = ({ icon, className }: { icon: React.ComponentType<{ className?: string }> | string | undefined | null, className?: string }) => {
+  if (!icon) return <Package className={className} />;
+  
+  if (typeof icon === 'string') {
+    // If it's a URL or just a string, we might want to render it differently.
+    // For now, assuming it might be an emoji or we fallback to Package
+    return <span className={className}>{icon}</span>; 
+  }
+  
+  const IconComponent = icon;
+  return <IconComponent className={className} />;
+};
 
-// Las categorías se cargarán desde la API
-const mockCategories: Category[] = [];
-
-// Los items se cargarán desde la API
-const mockItems: Item[] = [];
 
 const statusColors = {
   'Disponible': 'bg-green-100 text-green-800',
@@ -62,6 +114,7 @@ export default function CategoryDetailPage() {
   
   const [category, setCategory] = useState<Category | null>(null);
   const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('recent');
@@ -69,17 +122,51 @@ export default function CategoryDetailPage() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
-    // Simular carga de datos de la categoría
-    const foundCategory = mockCategories.find(cat => cat.id === categoryId);
-    if (foundCategory) {
-      setCategory(foundCategory);
-      // Filtrar items por categoría (en este caso, todos los items mock son de electrónicos)
-      if (categoryId === 1) {
-        setItems(mockItems);
-      } else {
-        // Para otras categorías, mostrar algunos items de ejemplo
-        setItems(mockItems.slice(0, 3));
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Primero intentamos encontrar la categoría en los datos estáticos
+        // Esto asegura que la página cargue incluso si la API no tiene metadatos de categoría aún
+        const staticCategory = STATIC_CATEGORIES.find(cat => String(cat.id) === String(categoryId));
+        
+        // Si existe en estáticos, la usamos como base
+        if (staticCategory) {
+            // @ts-expect-error - Adapt static category to Category interface
+            setCategory({
+                ...staticCategory,
+                itemCount: 0 // Will be updated if API returns data or counts
+            });
+        } else {
+            // Si no está en estáticos, intentamos buscar en la API (caso fallback)
+            try {
+                const categories = await api.items.getCategories();
+                const foundCategory = categories.find(cat => String(cat.id) === String(categoryId));
+                if (foundCategory) {
+                    setCategory(foundCategory);
+                }
+            } catch (err) {
+                console.error('Error fetching categories from API:', err);
+            }
+        }
+
+        // Siempre intentamos cargar los items, independientemente de dónde vino la categoría
+        try {
+            const response = await api.items.list({ category_id: categoryId });
+            setItems(response.data || []);
+        } catch (err) {
+            console.error('Error fetching items:', err);
+            setItems([]);
+        }
+
+      } catch (error) {
+        console.error('Error in category page load:', error);
+      } finally {
+        setLoading(false);
       }
+    };
+
+    if (categoryId) {
+      fetchData();
     }
   }, [categoryId]);
 
@@ -99,19 +186,28 @@ export default function CategoryDetailPage() {
       case 'popular':
         return b.views - a.views;
       case 'value-high':
-        return b.estimatedValue - a.estimatedValue;
+        return (b.estimatedValue || 0) - (a.estimatedValue || 0);
       case 'value-low':
-        return a.estimatedValue - b.estimatedValue;
+        return (a.estimatedValue || 0) - (b.estimatedValue || 0);
       default:
         return 0;
     }
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
+    );
+  }
 
   if (!category) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Categoría no encontrada</h1>
+          <p className="text-gray-600 mb-6">La categoría que buscas no existe o ha sido eliminada.</p>
           <Link href="/categories">
             <Button variant="primary">Volver a categorías</Button>
           </Link>
@@ -119,6 +215,8 @@ export default function CategoryDetailPage() {
       </div>
     );
   }
+
+  const categoryColor = 'bg-green-100 text-green-800'; // Default color since API doesn't return it
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -137,8 +235,8 @@ export default function CategoryDetailPage() {
                 Volver
               </Button>
               <div className="flex items-center">
-                <div className={`p-3 rounded-lg ${category.color} mr-4`}>
-                  <span className="text-2xl">{category.icon}</span>
+                <div className={`p-3 rounded-lg ${categoryColor} mr-4`}>
+                    <IconRenderer icon={category.icon as React.ComponentType<{ className?: string }> | string} className="h-8 w-8" />
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">{category.name}</h1>
@@ -209,16 +307,13 @@ export default function CategoryDetailPage() {
                 <option value="all">Todos los estados</option>
                 <option value="Disponible">Disponible</option>
                 <option value="En intercambio">En intercambio</option>
+                <option value="Intercambiado">Intercambiado</option>
               </select>
             </div>
           </div>
 
-          {/* View Mode Toggle */}
-          <div className="flex justify-between items-center mt-4">
-            <p className="text-sm text-gray-600">
-              Mostrando {sortedItems.length} de {items.length} productos
-            </p>
-            <div className="flex space-x-2">
+          <div className="flex justify-end mt-4">
+            <div className="flex gap-2">
               <Button
                 variant={viewMode === 'grid' ? 'primary' : 'outline'}
                 size="sm"
@@ -237,102 +332,131 @@ export default function CategoryDetailPage() {
           </div>
         </div>
 
+        {/* Results */}
+        <div className="mb-6">
+          <p className="text-gray-600">
+            {sortedItems.length} {sortedItems.length === 1 ? 'producto encontrado' : 'productos encontrados'}
+          </p>
+        </div>
+
         {/* Items Grid/List */}
-        {viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedItems.map((item) => (
-              <Link key={item.id} href={`/items/${item.id}`}>
-                <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-t-lg">
-                    <div className="w-full h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
-                      <Package className="h-12 w-12 text-gray-400" />
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">{item.name}</h3>
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[item.status as keyof typeof statusColors]}`}>
-                        {item.status}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
-                    <div className="flex justify-between items-center mb-3">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${conditionColors[item.condition as keyof typeof conditionColors]}`}>
-                        {item.condition}
-                      </span>
-                      <span className="text-lg font-bold text-green-600">€{item.estimatedValue}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        {item.owner.location}
-                      </div>
-                      <div className="flex items-center">
-                        <Eye className="h-4 w-4 mr-1" />
-                        {item.views}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+        {sortedItems.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
+            <Package className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No se encontraron productos</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Intenta con otros términos de búsqueda o filtros.
+            </p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow">
-            <div className="divide-y divide-gray-200">
-              {sortedItems.map((item) => (
-                <Link key={item.id} href={`/items/${item.id}`}>
-                  <div className="p-6 hover:bg-gray-50 transition-colors cursor-pointer">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center flex-1">
-                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center mr-4">
-                          <Package className="h-8 w-8 text-gray-400" />
+          <div className={viewMode === 'grid' 
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+            : 'space-y-4'
+          }>
+            {sortedItems.map((item) => (
+              <Link key={item.id} href={`/items/${item.id}`}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                  {viewMode === 'grid' ? (
+                    <>
+                      <div className="relative aspect-video w-full overflow-hidden rounded-t-lg bg-gray-200">
+                        {item.images[0] ? (
+                            <Image
+                            src={item.images[0]}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                            />
+                        ) : (
+                            <div className="flex h-full items-center justify-center">
+                                <Package className="h-12 w-12 text-gray-400" />
+                            </div>
+                        )}
+                        <div className="absolute top-2 right-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[item.status as keyof typeof statusColors]}`}>
+                            {item.status}
+                          </span>
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
-                            <span className="text-lg font-bold text-green-600">€{item.estimatedValue}</span>
+                      </div>
+                      <CardContent className="p-4">
+                        <div className="mb-2 flex items-start justify-between">
+                          <h3 className="font-semibold text-gray-900 line-clamp-1">{item.name}</h3>
+                        </div>
+                        <p className="text-sm text-gray-600 line-clamp-2 mb-3 h-10">
+                          {item.description}
+                        </p>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${conditionColors[item.condition as keyof typeof conditionColors]}`}>
+                            {item.condition}
+                          </span>
+                          <span className="font-bold text-green-600">
+                            {item.estimatedValue} €
+                          </span>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                          <div className="flex items-center">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {item.owner.location || 'Ubicación no disponible'}
                           </div>
-                          <p className="text-gray-600 mb-2">{item.description}</p>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${conditionColors[item.condition as keyof typeof conditionColors]}`}>
-                              {item.condition}
-                            </span>
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[item.status as keyof typeof statusColors]}`}>
+                          <div className="flex items-center">
+                            <Eye className="h-3 w-3 mr-1" />
+                            {item.views}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </>
+                  ) : (
+                    <div className="flex p-4">
+                      <div className="relative h-32 w-48 flex-shrink-0 overflow-hidden rounded-lg bg-gray-200">
+                         {item.images[0] ? (
+                            <Image
+                            src={item.images[0]}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                            />
+                        ) : (
+                            <div className="flex h-full items-center justify-center">
+                                <Package className="h-12 w-12 text-gray-400" />
+                            </div>
+                        )}
+                      </div>
+                      <div className="ml-6 flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
+                          <span className="font-bold text-green-600 text-lg">
+                            {item.estimatedValue} €
+                          </span>
+                        </div>
+                        <p className="mt-1 text-gray-600 line-clamp-2">{item.description}</p>
+                        <div className="mt-4 flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[item.status as keyof typeof statusColors]}`}>
                               {item.status}
                             </span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${conditionColors[item.condition as keyof typeof conditionColors]}`}>
+                              {item.condition}
+                            </span>
+                          </div>
+                          <div className="flex items-center text-sm text-gray-500 gap-4">
                             <div className="flex items-center">
                               <MapPin className="h-4 w-4 mr-1" />
                               {item.owner.location}
                             </div>
                             <div className="flex items-center">
                               <Eye className="h-4 w-4 mr-1" />
-                              {item.views}
+                              {item.views} views
                             </div>
+                            <span className="text-gray-400">
+                              {new Date(item.createdAt).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {sortedItems.length === 0 && (
-          <div className="text-center py-12">
-            <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron productos</h3>
-            <p className="text-gray-500 mb-4">
-              {searchTerm || conditionFilter !== 'all' || statusFilter !== 'all'
-                ? 'Intenta ajustar los filtros de búsqueda'
-                : 'Aún no hay productos en esta categoría'}
-            </p>
-            <Link href="/items/new">
-              <Button variant="primary">Publicar primer producto</Button>
-            </Link>
+                  )}
+                </Card>
+              </Link>
+            ))}
           </div>
         )}
       </div>
