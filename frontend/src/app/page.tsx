@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Recycle, Users, Leaf, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -13,6 +14,17 @@ export default function Home() {
               Intercambia, Reutiliza,{' '}
               <span className="text-green-600">Transforma</span>
             </h1>
+            
+            <div className="flex justify-center my-8">
+              <Image 
+                src="/greenloop-logo.svg" 
+                alt="GreenLoop Logo" 
+                width={100} 
+                height={100}
+                priority
+              />
+            </div>
+
             <p className="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
               GreenLoop es la plataforma que conecta personas para intercambiar objetos,
               promoviendo la economía circular y reduciendo la acumulación de CO2.
