@@ -142,7 +142,7 @@ export const useExchangeActions = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.exchanges.reject(id, reason ? { reason } : undefined);
+      const response = await api.exchanges.reject(id, reason ? { message: reason } : undefined);
       return response;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al rechazar intercambio';
@@ -157,7 +157,7 @@ export const useExchangeActions = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.exchanges.cancel(id, reason ? { reason } : undefined);
+      const response = await api.exchanges.cancel(id, reason ? { message: reason } : undefined);
       return response;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cancelar intercambio';
@@ -218,7 +218,7 @@ export const useExchangeMessages = (exchangeId: string) => {
     try {
       const response = await api.exchanges.sendMessage(exchangeId, {
         content,
-        type
+        message_type: type
       });
       
       // Agregar el nuevo mensaje a la lista

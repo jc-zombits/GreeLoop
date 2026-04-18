@@ -1,16 +1,37 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from datetime import datetime, timedelta
+from uuid import UUID
+from typing import Optional
+import math
 
 from app.core.database import get_db
-from app.models import User, Item, Exchange, CommunityPost, CommunityPostLike, PostType, ExchangeStatus, Rating
+from app.models import (
+    User,
+    Company,
+    Item,
+    Exchange,
+    CommunityPost,
+    CommunityPostLike,
+    CommunityFeedPost,
+    CommunityFeedLike,
+    CommunityFeedComment,
+    CommunityActorType,
+    CommunityMediaType,
+    PostType,
+    ExchangeStatus,
+    Rating,
+)
 from app.schemas import (
     CommunityStatsResponse, TopUsersResponse, TopUser, ApiUser,
     CommunityPostCreate, CommunityPostList, CommunityPost as CommunityPostSchema,
-    PostResponse, LikeResponse, PostAuthor
+    PostResponse, LikeResponse, PostAuthor,
+    FeedPostCreate, FeedPostList, FeedPost,
+    FeedCommentCreate, FeedCommentList, FeedComment,
+    ToggleLikeResponse, ShareResponse, FeedAuthor, ActorType, MediaType
 )
-from app.core.dependencies import get_current_user, get_optional_current_user
+from app.core.dependencies import get_current_user, get_optional_current_user, get_current_actor, get_optional_actor, CurrentActor
 
 router = APIRouter()
 
@@ -308,4 +329,379 @@ async def toggle_post_like(
         message=message,
         liked=liked,
         likes_count=post.likes_count
+    )
+
+
+def _format_location(city: Optional[str], state: Optional[str], country: Optional[str] = None) -> str:
+    parts = [p for p in [city, state, country] if p]
+    return ", ".join(parts) if parts else "Colombia"
+
+
+def _user_display_name(user: User) -> str:
+    name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+    return name if name else user.username
+
+
+@router.get("/feed", response_model=FeedPostList)
+async def list_feed_posts(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
+    current_actor: Optional[CurrentActor] = Depends(get_optional_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    total_q = select(func.count(CommunityFeedPost.id)).where(CommunityFeedPost.is_active == True)
+    total_res = await db.execute(total_q)
+    total = total_res.scalar() or 0
+
+    total_pages = max(1, math.ceil(total / page_size)) if total else 1
+    offset = (page - 1) * page_size
+
+    posts_q = (
+        select(CommunityFeedPost)
+        .where(CommunityFeedPost.is_active == True)
+        .order_by(CommunityFeedPost.created_at.desc())
+        .offset(offset)
+        .limit(page_size)
+    )
+    posts_res = await db.execute(posts_q)
+    posts = posts_res.scalars().all()
+
+    user_ids = set()
+    company_ids = set()
+    for p in posts:
+        if p.author_type == CommunityActorType.USER:
+            user_ids.add(p.author_id)
+        else:
+            company_ids.add(p.author_id)
+
+    users_by_id = {}
+    companies_by_id = {}
+    if user_ids:
+        ures = await db.execute(select(User).where(User.id.in_(list(user_ids))))
+        users_by_id = {u.id: u for u in ures.scalars().all()}
+    if company_ids:
+        cres = await db.execute(select(Company).where(Company.id.in_(list(company_ids))))
+        companies_by_id = {c.id: c for c in cres.scalars().all()}
+
+    liked_post_ids = set()
+    if current_actor is not None and posts:
+        like_q = select(CommunityFeedLike.post_id).where(
+            CommunityFeedLike.post_id.in_([p.id for p in posts]),
+            CommunityFeedLike.actor_type == CommunityActorType(current_actor.actor_type),
+            CommunityFeedLike.actor_id == current_actor.id
+        )
+        like_res = await db.execute(like_q)
+        liked_post_ids = set(like_res.scalars().all())
+
+    response_posts = []
+    for p in posts:
+        if p.author_type == CommunityActorType.USER:
+            u = users_by_id.get(p.author_id)
+            author = FeedAuthor(
+                id=str(p.author_id),
+                actor_type=ActorType.user,
+                name=_user_display_name(u) if u else "Usuario",
+                username=u.username if u else "usuario",
+                avatar=u.avatar_url if u and u.avatar_url else "/api/placeholder/48/48",
+                location=_format_location(u.city if u else None, u.state if u else None, u.country if u else None)
+            )
+        else:
+            c = companies_by_id.get(p.author_id)
+            author = FeedAuthor(
+                id=str(p.author_id),
+                actor_type=ActorType.company,
+                name=c.company_name if c else "Empresa",
+                username=c.username if c else "empresa",
+                avatar=c.logo_url if c and c.logo_url else "/api/placeholder/48/48",
+                location=_format_location(c.city if c else None, c.state if c else None, c.country if c else None)
+            )
+
+        response_posts.append(FeedPost(
+            id=str(p.id),
+            title=p.title,
+            content=p.content,
+            post_type=p.post_type.value if hasattr(p.post_type, "value") else "general",
+            media_type=p.media_type.value if hasattr(p.media_type, "value") else "none",
+            media_url=p.media_url,
+            author=author,
+            likes_count=p.likes_count,
+            comments_count=p.comments_count,
+            shares_count=p.shares_count,
+            created_at=p.created_at,
+            is_liked=p.id in liked_post_ids
+        ))
+
+    return FeedPostList(
+        posts=response_posts,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+        has_next=page < total_pages,
+        has_prev=page > 1
+    )
+
+
+@router.post("/feed", response_model=FeedPost)
+async def create_feed_post(
+    post_data: FeedPostCreate,
+    current_actor: CurrentActor = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    if post_data.media_type != MediaType.none and not post_data.media_url:
+        raise HTTPException(status_code=400, detail="media_url es requerido cuando media_type no es none")
+
+    post = CommunityFeedPost(
+        author_type=CommunityActorType(current_actor.actor_type),
+        author_id=current_actor.id,
+        title=post_data.title,
+        content=post_data.content,
+        post_type=PostType(post_data.post_type.value),
+        media_type=CommunityMediaType(post_data.media_type.value),
+        media_url=post_data.media_url
+    )
+    db.add(post)
+    await db.commit()
+    await db.refresh(post)
+
+    if current_actor.actor_type == "user":
+        u = current_actor.user
+        author = FeedAuthor(
+            id=str(u.id),
+            actor_type=ActorType.user,
+            name=_user_display_name(u),
+            username=u.username,
+            avatar=u.avatar_url or "/api/placeholder/48/48",
+            location=_format_location(u.city, u.state, u.country)
+        )
+    else:
+        c = current_actor.company
+        author = FeedAuthor(
+            id=str(c.id),
+            actor_type=ActorType.company,
+            name=c.company_name,
+            username=c.username,
+            avatar=c.logo_url or "/api/placeholder/48/48",
+            location=_format_location(c.city, c.state, c.country)
+        )
+
+    return FeedPost(
+        id=str(post.id),
+        title=post.title,
+        content=post.content,
+        post_type=post.post_type.value,
+        media_type=post.media_type.value,
+        media_url=post.media_url,
+        author=author,
+        likes_count=post.likes_count,
+        comments_count=post.comments_count,
+        shares_count=post.shares_count,
+        created_at=post.created_at,
+        is_liked=False
+    )
+
+
+@router.post("/feed/{post_id}/like", response_model=ToggleLikeResponse)
+async def toggle_feed_like(
+    post_id: UUID,
+    current_actor: CurrentActor = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    post_res = await db.execute(
+        select(CommunityFeedPost).where(
+            CommunityFeedPost.id == post_id,
+            CommunityFeedPost.is_active == True
+        )
+    )
+    post = post_res.scalar_one_or_none()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post no encontrado")
+
+    like_res = await db.execute(
+        select(CommunityFeedLike).where(
+            CommunityFeedLike.post_id == post_id,
+            CommunityFeedLike.actor_type == CommunityActorType(current_actor.actor_type),
+            CommunityFeedLike.actor_id == current_actor.id
+        )
+    )
+    existing_like = like_res.scalar_one_or_none()
+
+    if existing_like:
+        await db.delete(existing_like)
+        post.decrement_likes()
+        liked = False
+    else:
+        db.add(CommunityFeedLike(
+            post_id=post_id,
+            actor_type=CommunityActorType(current_actor.actor_type),
+            actor_id=current_actor.id
+        ))
+        post.increment_likes()
+        liked = True
+
+    await db.commit()
+    await db.refresh(post)
+    return ToggleLikeResponse(liked=liked, likes_count=post.likes_count)
+
+
+@router.post("/feed/{post_id}/share", response_model=ShareResponse)
+async def register_feed_share(
+    post_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    post_res = await db.execute(
+        select(CommunityFeedPost).where(
+            CommunityFeedPost.id == post_id,
+            CommunityFeedPost.is_active == True
+        )
+    )
+    post = post_res.scalar_one_or_none()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post no encontrado")
+
+    post.increment_shares()
+    await db.commit()
+    await db.refresh(post)
+    return ShareResponse(shares_count=post.shares_count)
+
+
+@router.get("/feed/{post_id}/comments", response_model=FeedCommentList)
+async def list_feed_comments(
+    post_id: UUID,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    total_q = select(func.count(CommunityFeedComment.id)).where(
+        CommunityFeedComment.post_id == post_id,
+        CommunityFeedComment.is_active == True
+    )
+    total_res = await db.execute(total_q)
+    total = total_res.scalar() or 0
+
+    total_pages = max(1, math.ceil(total / page_size)) if total else 1
+    offset = (page - 1) * page_size
+
+    comments_q = (
+        select(CommunityFeedComment)
+        .where(CommunityFeedComment.post_id == post_id, CommunityFeedComment.is_active == True)
+        .order_by(CommunityFeedComment.created_at.asc())
+        .offset(offset)
+        .limit(page_size)
+    )
+    comments_res = await db.execute(comments_q)
+    comments = comments_res.scalars().all()
+
+    user_ids = set()
+    company_ids = set()
+    for c in comments:
+        if c.actor_type == CommunityActorType.USER:
+            user_ids.add(c.actor_id)
+        else:
+            company_ids.add(c.actor_id)
+
+    users_by_id = {}
+    companies_by_id = {}
+    if user_ids:
+        ures = await db.execute(select(User).where(User.id.in_(list(user_ids))))
+        users_by_id = {u.id: u for u in ures.scalars().all()}
+    if company_ids:
+        cres = await db.execute(select(Company).where(Company.id.in_(list(company_ids))))
+        companies_by_id = {c.id: c for c in cres.scalars().all()}
+
+    items = []
+    for c in comments:
+        if c.actor_type == CommunityActorType.USER:
+            u = users_by_id.get(c.actor_id)
+            author = FeedAuthor(
+                id=str(c.actor_id),
+                actor_type=ActorType.user,
+                name=_user_display_name(u) if u else "Usuario",
+                username=u.username if u else "usuario",
+                avatar=u.avatar_url if u and u.avatar_url else "/api/placeholder/48/48",
+                location=_format_location(u.city if u else None, u.state if u else None, u.country if u else None)
+            )
+        else:
+            comp = companies_by_id.get(c.actor_id)
+            author = FeedAuthor(
+                id=str(c.actor_id),
+                actor_type=ActorType.company,
+                name=comp.company_name if comp else "Empresa",
+                username=comp.username if comp else "empresa",
+                avatar=comp.logo_url if comp and comp.logo_url else "/api/placeholder/48/48",
+                location=_format_location(comp.city if comp else None, comp.state if comp else None, comp.country if comp else None)
+            )
+
+        items.append(FeedComment(
+            id=str(c.id),
+            post_id=str(c.post_id),
+            author=author,
+            content=c.content,
+            created_at=c.created_at
+        ))
+
+    return FeedCommentList(
+        comments=items,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )
+
+
+@router.post("/feed/{post_id}/comments", response_model=FeedComment)
+async def create_feed_comment(
+    post_id: UUID,
+    comment: FeedCommentCreate,
+    current_actor: CurrentActor = Depends(get_current_actor),
+    db: AsyncSession = Depends(get_db)
+):
+    post_res = await db.execute(
+        select(CommunityFeedPost).where(
+            CommunityFeedPost.id == post_id,
+            CommunityFeedPost.is_active == True
+        )
+    )
+    post = post_res.scalar_one_or_none()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post no encontrado")
+
+    c = CommunityFeedComment(
+        post_id=post_id,
+        actor_type=CommunityActorType(current_actor.actor_type),
+        actor_id=current_actor.id,
+        content=comment.content
+    )
+    db.add(c)
+    post.increment_comments()
+    await db.commit()
+    await db.refresh(c)
+
+    if current_actor.actor_type == "user":
+        u = current_actor.user
+        author = FeedAuthor(
+            id=str(u.id),
+            actor_type=ActorType.user,
+            name=_user_display_name(u),
+            username=u.username,
+            avatar=u.avatar_url or "/api/placeholder/48/48",
+            location=_format_location(u.city, u.state, u.country)
+        )
+    else:
+        comp = current_actor.company
+        author = FeedAuthor(
+            id=str(comp.id),
+            actor_type=ActorType.company,
+            name=comp.company_name,
+            username=comp.username,
+            avatar=comp.logo_url or "/api/placeholder/48/48",
+            location=_format_location(comp.city, comp.state, comp.country)
+        )
+
+    return FeedComment(
+        id=str(c.id),
+        post_id=str(post_id),
+        author=author,
+        content=c.content,
+        created_at=c.created_at
     )

@@ -205,8 +205,8 @@ export default function NewExchangePage() {
     
     try {
       const exchangeData: ExchangeData = {
-        offered_item_id: parseInt(selectedItem.id),
-        requested_item_id: parseInt(targetItem.id),
+        offered_item_id: String(selectedItem.id),
+        requested_item_id: String(targetItem.id),
         message: message.trim() || undefined
       };
 

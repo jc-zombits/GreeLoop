@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Boolean, DateTime, ForeignKey, Enum, Integer
+from sqlalchemy import Column, String, Text, Boolean, DateTime, ForeignKey, Enum, Integer, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -156,3 +156,94 @@ class CommunityPostComment(Base):
         if self.author and self.author.avatar_url:
             return self.author.avatar_url
         return "/api/placeholder/40/40"
+
+
+class CommunityActorType(str, enum.Enum):
+    USER = "user"
+    COMPANY = "company"
+
+
+class CommunityMediaType(str, enum.Enum):
+    NONE = "none"
+    IMAGE = "image"
+    VIDEO = "video"
+
+
+class CommunityFeedPost(Base):
+    __tablename__ = "community_feed_posts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+
+    author_type = Column(Enum(CommunityActorType), nullable=False, index=True)
+    author_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+
+    title = Column(String(200), nullable=True)
+    content = Column(Text, nullable=False)
+    post_type = Column(Enum(PostType), default=PostType.GENERAL, nullable=False, index=True)
+
+    media_type = Column(Enum(CommunityMediaType), default=CommunityMediaType.NONE, nullable=False)
+    media_url = Column(String(500), nullable=True)
+
+    likes_count = Column(Integer, default=0, nullable=False)
+    comments_count = Column(Integer, default=0, nullable=False)
+    shares_count = Column(Integer, default=0, nullable=False)
+
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    likes = relationship("CommunityFeedLike", back_populates="post", cascade="all, delete-orphan")
+    comments = relationship("CommunityFeedComment", back_populates="post", cascade="all, delete-orphan")
+
+    def increment_likes(self):
+        self.likes_count += 1
+
+    def decrement_likes(self):
+        if self.likes_count > 0:
+            self.likes_count -= 1
+
+    def increment_comments(self):
+        self.comments_count += 1
+
+    def decrement_comments(self):
+        if self.comments_count > 0:
+            self.comments_count -= 1
+
+    def increment_shares(self):
+        self.shares_count += 1
+
+
+class CommunityFeedLike(Base):
+    __tablename__ = "community_feed_likes"
+    __table_args__ = (
+        UniqueConstraint("post_id", "actor_type", "actor_id", name="uq_feed_like_post_actor"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    post_id = Column(UUID(as_uuid=True), ForeignKey("community_feed_posts.id"), nullable=False, index=True)
+
+    actor_type = Column(Enum(CommunityActorType), nullable=False, index=True)
+    actor_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    post = relationship("CommunityFeedPost", back_populates="likes")
+
+
+class CommunityFeedComment(Base):
+    __tablename__ = "community_feed_comments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    post_id = Column(UUID(as_uuid=True), ForeignKey("community_feed_posts.id"), nullable=False, index=True)
+
+    actor_type = Column(Enum(CommunityActorType), nullable=False, index=True)
+    actor_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+
+    content = Column(Text, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    post = relationship("CommunityFeedPost", back_populates="comments")

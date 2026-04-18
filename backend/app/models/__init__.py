@@ -9,7 +9,17 @@ from .message import Message, MessageType
 from .rating import Rating
 from .notification import Notification, NotificationType, NotificationPriority
 from .user_session import UserSession
-from .community_post import CommunityPost, CommunityPostLike, CommunityPostComment, PostType
+from .community_post import (
+    CommunityPost,
+    CommunityPostLike,
+    CommunityPostComment,
+    PostType,
+    CommunityFeedPost,
+    CommunityFeedLike,
+    CommunityFeedComment,
+    CommunityActorType,
+    CommunityMediaType,
+)
 from .company import Company
 from .company_session import CompanySession
 from .contribution import Contribution, ContributionStatus, DeliveryMethod
@@ -39,6 +49,11 @@ __all__ = [
     "CommunityPostLike",
     "CommunityPostComment",
     "PostType",
+    "CommunityFeedPost",
+    "CommunityFeedLike",
+    "CommunityFeedComment",
+    "CommunityActorType",
+    "CommunityMediaType",
     "Company",
     "CompanySession",
     "Contribution",

@@ -211,7 +211,18 @@ from .community import (
     CommunityStatsResponse,
     TopUser,
     TopUsersResponse,
-    ApiUser
+    ApiUser,
+    ActorType,
+    MediaType,
+    FeedAuthor,
+    FeedPostCreate,
+    FeedPost,
+    FeedPostList,
+    FeedCommentCreate,
+    FeedComment,
+    FeedCommentList,
+    ToggleLikeResponse,
+    ShareResponse
 )
 
 # Esquemas de posts de comunidad

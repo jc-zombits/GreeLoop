@@ -169,14 +169,31 @@ export const useCreateItem = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createItem = async (itemData: FormData) => {
+  type CreateItemInput = {
+    title: string;
+    description: string;
+    category_id: string;
+    condition: string;
+    estimated_value?: number;
+    location?: string;
+    [key: string]: unknown;
+  };
+
+  const uploadImages = async (itemId: string, files: File[]) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.items.create(itemData);
-      return response;
+
+      const results = [];
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.items.uploadImages(itemId, formData);
+        results.push(response);
+      }
+      return results;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al crear item';
+      const errorMessage = err instanceof Error ? err.message : 'Error al subir imágenes';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -184,20 +201,28 @@ export const useCreateItem = () => {
     }
   };
 
-  const uploadImages = async (itemId: string, files: File[]) => {
+  const createItem = async (itemData: CreateItemInput, images: File[] = []) => {
     try {
       setLoading(true);
       setError(null);
-      
-      const formData = new FormData();
-      files.forEach((file) => {
-        formData.append(`images`, file);
-      });
+      const payload: Record<string, unknown> = {
+        title: itemData.title,
+        description: itemData.description,
+        category_id: itemData.category_id,
+        condition: itemData.condition,
+        estimated_value: itemData.estimated_value,
+        location: itemData.location
+      };
 
-      const response = await api.items.uploadImages(itemId, formData);
+      const response = await api.items.create(payload as CreateItemInput);
+      const createdAny = response as unknown as { id?: string };
+      const itemId = createdAny?.id ? String(createdAny.id) : '';
+      if (itemId && images.length) {
+        await uploadImages(itemId, images);
+      }
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al subir imágenes';
+      const errorMessage = err instanceof Error ? err.message : 'Error al crear item';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -234,7 +259,7 @@ export const useUpdateItem = () => {
       const payload: {
         title?: string;
         description?: string;
-        category_id?: number;
+        category_id?: string;
         condition?: string;
         estimated_value?: number;
         location?: string;
@@ -243,7 +268,7 @@ export const useUpdateItem = () => {
         description: itemData.description,
         category_id:
           itemData.category_id !== undefined && itemData.category_id !== null && itemData.category_id !== ''
-            ? Number(itemData.category_id)
+            ? String(itemData.category_id)
             : undefined,
         condition: itemData.condition,
         estimated_value: itemData.estimated_value,

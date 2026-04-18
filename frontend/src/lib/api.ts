@@ -1,5 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS } from './constants';
-import { PaginatedResponse, User, Category, Item, Company } from '@/types';
+import { PaginatedResponse, User, Category, Item, Company, Exchange, Message as AppMessage } from '@/types';
 
 // Tipos específicos para la API
 interface LoginCredentials {
@@ -117,7 +117,7 @@ interface UserStatsResponse {
 interface ItemData {
   title: string;
   description: string;
-  category_id: number;
+  category_id: string;
   condition: string;
   estimated_value?: number;
   location?: string;
@@ -126,7 +126,7 @@ interface ItemData {
 
 interface ItemSearchParams {
   q?: string;
-  category_id?: number;
+  category_id?: string;
   condition?: string;
   location?: string;
   min_value?: number;
@@ -136,20 +136,23 @@ interface ItemSearchParams {
 }
 
 export interface ExchangeData {
-  offered_item_id: number;
-  requested_item_id: number;
+  offered_item_id: string;
+  requested_item_id: string;
   message?: string;
 }
 
 interface ExchangeUpdateData {
   status?: string;
   message?: string;
+  reason?: string;
+  completed?: boolean;
+  completion_notes?: string;
 }
 
 interface MessageData {
   content: string;
   message_type?: 'text' | 'image' | 'system' | 'exchange_proposal';
-  receiver_id: string;
+  receiver_id?: string;
   exchange_id?: string;
   reply_to_id?: string;
   metadata?: Record<string, unknown>;
@@ -517,19 +520,28 @@ export const api = {
 
   // Intercambios
   exchanges: {
-    list: (params?: Record<string, string>) => {
-      const query = params ? `?${new URLSearchParams(params).toString()}` : '';
-      return apiClient.get(`${API_ENDPOINTS.EXCHANGES.LIST}${query}`);
+    list: (params?: Record<string, string | number | boolean | undefined>) => {
+      const query = params
+        ? `?${new URLSearchParams(
+            Object.entries(params).reduce<Record<string, string>>((acc, [k, v]) => {
+              if (v === undefined || v === null) return acc;
+              acc[k] = String(v);
+              return acc;
+            }, {})
+          ).toString()}`
+        : '';
+      return apiClient.get<PaginatedResponse<Exchange>>(`${API_ENDPOINTS.EXCHANGES.LIST}${query}`);
     },
-    get: (id: string) => apiClient.get(`${API_ENDPOINTS.EXCHANGES.LIST}/${id}`),
+    get: (id: string) => apiClient.get<Exchange>(`${API_ENDPOINTS.EXCHANGES.LIST}/${id}`),
     create: (data: ExchangeData) => apiClient.post(API_ENDPOINTS.EXCHANGES.CREATE, data),
     update: (id: string, data: ExchangeUpdateData) => apiClient.put(`${API_ENDPOINTS.EXCHANGES.UPDATE}/${id}`, data),
     accept: (id: string) => apiClient.post(`${API_ENDPOINTS.EXCHANGES.LIST}/${id}/accept`),
     reject: (id: string, data?: ExchangeUpdateData) => apiClient.post(`${API_ENDPOINTS.EXCHANGES.LIST}/${id}/reject`, data),
     cancel: (id: string, data?: ExchangeUpdateData) => apiClient.post(`${API_ENDPOINTS.EXCHANGES.LIST}/${id}/cancel`, data),
     complete: (id: string, data?: ExchangeUpdateData) => apiClient.post(`${API_ENDPOINTS.EXCHANGES.LIST}/${id}/complete`, data),
-    getMessages: (id: string) => apiClient.get(`${API_ENDPOINTS.EXCHANGES.LIST}/${id}/messages`),
-    sendMessage: (id: string, data: MessageData) => apiClient.post(`${API_ENDPOINTS.EXCHANGES.LIST}/${id}/messages`, data),
+    getMessages: (id: string) => apiClient.get<AppMessage[]>(`${API_ENDPOINTS.EXCHANGES.LIST}/${id}/messages`),
+    sendMessage: (id: string, data: MessageData) =>
+      apiClient.post<AppMessage>(`${API_ENDPOINTS.EXCHANGES.LIST}/${id}/messages`, data),
   },
 
   // Mensajes

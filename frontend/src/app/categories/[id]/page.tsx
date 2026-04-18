@@ -151,7 +151,7 @@ export default function CategoryDetailPage() {
 
         // Siempre intentamos cargar los items, independientemente de dónde vino la categoría
         try {
-            const response = await api.items.list({ category_id: categoryId });
+            const response = await api.items.list({ category_id: String(categoryId) });
             setItems(response.data || []);
         } catch (err) {
             console.error('Error fetching items:', err);

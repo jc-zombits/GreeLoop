@@ -321,9 +321,9 @@ export default function Dashboard() {
                   <p className="text-sm text-gray-600">Puntos redimidos</p>
                   <p className="text-sm font-semibold text-gray-900">{redemptionsSummary?.total_points_redeemed ?? 0}</p>
                 </div>
-                {redemptionsSummary?.redemptions?.length > 0 ? (
+                {(redemptionsSummary?.redemptions?.length ?? 0) > 0 ? (
                   <div className="mt-3 space-y-2">
-                    {redemptionsSummary.redemptions.slice(0, 3).map((r, idx) => {
+                    {(redemptionsSummary?.redemptions ?? []).slice(0, 3).map((r, idx) => {
                       const d = r.created_at ? new Date(r.created_at) : null;
                       const dateStr = d ? d.toLocaleDateString() : '';
                       return (

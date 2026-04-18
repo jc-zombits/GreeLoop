@@ -7,6 +7,7 @@ from uuid import UUID
 from app.core.database import get_db
 from app.core.security import verify_token, AuthenticationError
 from app.models.user import User
+from app.models.company import Company
 from app.models.admin_user import AdminUser
 from app.core.config import settings
 
@@ -108,6 +109,101 @@ async def get_optional_current_user(
             return None
         
         return user
+    except Exception:
+        return None
+
+
+class CurrentActor:
+    def __init__(self, actor_type: str, user: Optional[User] = None, company: Optional[Company] = None):
+        self.actor_type = actor_type
+        self.user = user
+        self.company = company
+
+    @property
+    def id(self) -> UUID:
+        if self.user is not None:
+            return self.user.id
+        if self.company is not None:
+            return self.company.id
+        raise ValueError("Actor sin entidad")
+
+    @property
+    def is_active(self) -> bool:
+        if self.user is not None:
+            return bool(self.user.is_active)
+        if self.company is not None:
+            return bool(self.company.is_active)
+        return False
+
+
+async def get_current_actor(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db)
+) -> CurrentActor:
+    payload = verify_token(token, "access")
+    if payload is None:
+        raise AuthenticationError("Token inválido o expirado")
+
+    actor_id_str = payload.get("sub")
+    if actor_id_str is None:
+        raise AuthenticationError("Token inválido")
+
+    try:
+        actor_id = UUID(actor_id_str)
+    except ValueError:
+        raise AuthenticationError("ID inválido")
+
+    from sqlalchemy import select
+    user_result = await db.execute(select(User).where(User.id == actor_id))
+    user = user_result.scalar_one_or_none()
+    if user is not None:
+        if not user.is_active:
+            raise AuthenticationError("Usuario inactivo")
+        return CurrentActor(actor_type="user", user=user)
+
+    company_result = await db.execute(select(Company).where(Company.id == actor_id))
+    company = company_result.scalar_one_or_none()
+    if company is not None:
+        if not company.is_active:
+            raise AuthenticationError("Empresa inactiva")
+        return CurrentActor(actor_type="company", company=company)
+
+    raise AuthenticationError("Usuario o empresa no encontrado")
+
+
+async def get_optional_actor(
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+) -> Optional[CurrentActor]:
+    authorization = request.headers.get("Authorization")
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+
+    token = authorization.split(" ")[1]
+    try:
+        payload = verify_token(token, "access")
+        if payload is None:
+            return None
+        actor_id_str = payload.get("sub")
+        if actor_id_str is None:
+            return None
+        try:
+            actor_id = UUID(actor_id_str)
+        except ValueError:
+            return None
+
+        from sqlalchemy import select
+        user_result = await db.execute(select(User).where(User.id == actor_id))
+        user = user_result.scalar_one_or_none()
+        if user is not None and user.is_active:
+            return CurrentActor(actor_type="user", user=user)
+
+        company_result = await db.execute(select(Company).where(Company.id == actor_id))
+        company = company_result.scalar_one_or_none()
+        if company is not None and company.is_active:
+            return CurrentActor(actor_type="company", company=company)
+
+        return None
     except Exception:
         return None
 

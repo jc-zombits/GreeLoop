@@ -122,3 +122,85 @@ class CommunityPostsResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+class ActorType(str, Enum):
+    user = "user"
+    company = "company"
+
+
+class MediaType(str, Enum):
+    none = "none"
+    image = "image"
+    video = "video"
+
+
+class FeedAuthor(BaseModel):
+    id: str
+    actor_type: ActorType
+    name: str
+    username: str
+    avatar: str
+    location: str
+
+
+class FeedPostCreate(BaseModel):
+    title: Optional[str] = None
+    content: str = Field(..., min_length=1, max_length=5000)
+    post_type: PostType = PostType.general
+    media_type: MediaType = MediaType.none
+    media_url: Optional[str] = None
+
+
+class FeedPost(BaseModel):
+    id: str
+    title: Optional[str]
+    content: str
+    post_type: PostType
+    media_type: MediaType
+    media_url: Optional[str]
+    author: FeedAuthor
+    likes_count: int
+    comments_count: int
+    shares_count: int
+    created_at: datetime
+    is_liked: bool = False
+
+
+class FeedPostList(BaseModel):
+    posts: List[FeedPost]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
+
+class FeedCommentCreate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=1000)
+
+
+class FeedComment(BaseModel):
+    id: str
+    post_id: str
+    author: FeedAuthor
+    content: str
+    created_at: datetime
+
+
+class FeedCommentList(BaseModel):
+    comments: List[FeedComment]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class ToggleLikeResponse(BaseModel):
+    liked: bool
+    likes_count: int
+
+
+class ShareResponse(BaseModel):
+    shares_count: int

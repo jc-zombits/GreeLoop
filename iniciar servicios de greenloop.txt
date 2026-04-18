@@ -10,3 +10,10 @@ cd frontend && npm run dev
 	2. Módulo de educación en intercambio sostenible, CO2, contaminación, reciclaje, calentamiento global, etc.
 	3. Módulo de creación y publicación de eventos, congresos, seminarios, encuentros, concursos, exposiciones, etc.
 	4. Módulo sala-live-chat para socialización e interacción entre usuarios (socializar y conocer personas)***
+
+
+
+
+adminuser@mail.com - Adm1nus3r*
+
+adminwork@mail.com - Adm1nw0rk*

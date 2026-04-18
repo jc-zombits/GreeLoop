@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { Users, MessageCircle, TrendingUp, Award, MapPin, Calendar, Star, Heart, Plus, Send } from 'lucide-react';
+import { Users, MessageCircle, TrendingUp, Award, MapPin, Calendar, Star, Heart, Plus, Send, Share2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
@@ -13,19 +12,39 @@ interface AuthUser {
   avatar: string;
 }
 
-interface ApiPost {
+type PostType = 'success_story' | 'tip' | 'general';
+type MediaType = 'none' | 'image' | 'video';
+
+interface FeedAuthor {
   id: string;
-  author: {
-    name: string;
-    avatar: string;
-    location: string;
-  };
+  actor_type: 'user' | 'company';
+  name: string;
+  username: string;
+  avatar: string;
+  location: string;
+}
+
+interface FeedPost {
+  id: string;
+  title?: string | null;
   content: string;
-  image_url?: string;
+  post_type: PostType;
+  media_type: MediaType;
+  media_url?: string | null;
+  author: FeedAuthor;
   likes_count: number;
   comments_count: number;
+  shares_count: number;
   created_at: string;
-  post_type: 'success_story' | 'tip' | 'general';
+  is_liked: boolean;
+}
+
+interface FeedComment {
+  id: string;
+  post_id: string;
+  author: FeedAuthor;
+  content: string;
+  created_at: string;
 }
 
 // Simulamos el estado de autenticación - en una app real esto vendría del contexto de auth
@@ -84,26 +103,11 @@ interface ApiUser {
   join_date: string;
 }
 
-interface CommunityPost {
-  id: string;
-  author: {
-    name: string;
-    avatar: string;
-    location: string;
-  };
-  content: string;
-  image?: string;
-  likes: number;
-  comments: number;
-  createdAt: string;
-  type: 'success_story' | 'tip' | 'general';
-}
-
 const CommunityPage: React.FC = () => {
   const { isAuthenticated, isCommunityMember, joinCommunity } = useAuth();
   const [stats, setStats] = useState<CommunityStats | null>(null);
   const [topUsers, setTopUsers] = useState<TopUser[]>([]);
-  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
+  const [communityPosts, setCommunityPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Estado para el formulario de crear post
@@ -111,10 +115,15 @@ const CommunityPage: React.FC = () => {
   const [newPost, setNewPost] = useState({
     title: '',
     content: '',
-    post_type: 'general' as 'success_story' | 'tip' | 'general',
-    image_url: ''
+    post_type: 'general' as PostType,
+    media_type: 'none' as MediaType,
+    media_url: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
+  const [commentsByPostId, setCommentsByPostId] = useState<Record<string, FeedComment[]>>({});
+  const [commentDraftByPostId, setCommentDraftByPostId] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchCommunityData = async () => {
@@ -152,26 +161,15 @@ const CommunityPage: React.FC = () => {
           joinDate: user.join_date
         }));
 
-        // Obtener posts de la comunidad desde la API
-        const postsResponse = await fetch(`${API_BASE_URL}/api/v1/community/posts?page=1&limit=10`);
-        let communityPosts: CommunityPost[] = [];
-        
+        const token = localStorage.getItem('access_token');
+        const postsResponse = await fetch(`${API_BASE_URL}/api/v1/community/feed?page=1&page_size=10`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined
+        });
+        let communityPosts: FeedPost[] = [];
+
         if (postsResponse.ok) {
           const postsData = await postsResponse.json();
-          communityPosts = postsData.posts.map((post: ApiPost) => ({
-            id: post.id,
-            author: {
-              name: post.author.name,
-              avatar: post.author.avatar,
-              location: post.author.location
-            },
-            content: post.content,
-            image: post.image_url,
-            likes: post.likes_count,
-            comments: post.comments_count,
-            createdAt: post.created_at,
-            type: post.post_type
-          }));
+          communityPosts = postsData.posts as FeedPost[];
         } else {
           console.warn('No se pudieron cargar los posts de la comunidad');
         }
@@ -196,41 +194,32 @@ const CommunityPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('http://localhost:8000/api/v1/community/posts', {
+      const response = await fetch(`${API_BASE_URL}/api/v1/community/feed`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(newPost)
+        body: JSON.stringify({
+          title: newPost.title || null,
+          content: newPost.content,
+          post_type: newPost.post_type,
+          media_type: newPost.media_type,
+          media_url: newPost.media_type === 'none' ? null : (newPost.media_url || null)
+        })
       });
       
       if (response.ok) {
-        const result = await response.json();
-        // Agregar el nuevo post al inicio de la lista
-        const newPostData: CommunityPost = {
-          id: result.post.id,
-          author: {
-            name: result.post.author.name,
-            avatar: result.post.author.avatar,
-            location: result.post.author.location
-          },
-          content: result.post.content,
-          image: result.post.image_url,
-          likes: result.post.likes_count,
-          comments: result.post.comments_count,
-          createdAt: result.post.created_at,
-          type: result.post.post_type
-        };
-        
-        setCommunityPosts(prev => [newPostData, ...prev]);
+        const created = (await response.json()) as FeedPost;
+        setCommunityPosts(prev => [created, ...prev]);
         
         // Resetear formulario
         setNewPost({
           title: '',
           content: '',
           post_type: 'general',
-          image_url: ''
+          media_type: 'none',
+          media_url: ''
         });
         setShowCreateForm(false);
       } else {
@@ -271,6 +260,92 @@ const CommunityPage: React.FC = () => {
         return 'Consejo';
       default:
         return 'General';
+    }
+  };
+
+  const toggleLike = async (postId: string) => {
+    if (!isAuthenticated) return;
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/community/feed/${postId}/like`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { liked: boolean; likes_count: number };
+      setCommunityPosts(prev =>
+        prev.map(p =>
+          p.id === postId ? { ...p, is_liked: data.liked, likes_count: data.likes_count } : p
+        )
+      );
+    } catch {
+    }
+  };
+
+  const sharePost = async (postId: string) => {
+    const url = `${window.location.origin}/community#post-${postId}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ url });
+      } catch {
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+      }
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/community/feed/${postId}/share`, { method: 'POST' });
+      if (!res.ok) return;
+      const data = (await res.json()) as { shares_count: number };
+      setCommunityPosts(prev => prev.map(p => (p.id === postId ? { ...p, shares_count: data.shares_count } : p)));
+    } catch {
+    }
+  };
+
+  const toggleComments = async (postId: string) => {
+    const next = expandedPostId === postId ? null : postId;
+    setExpandedPostId(next);
+    if (!next) return;
+    if (commentsByPostId[next]) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/community/feed/${postId}/comments?page=1&page_size=50`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { comments: FeedComment[] };
+      setCommentsByPostId(prev => ({ ...prev, [postId]: data.comments || [] }));
+    } catch {
+    }
+  };
+
+  const submitComment = async (postId: string) => {
+    if (!isAuthenticated) return;
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+
+    const content = (commentDraftByPostId[postId] || '').trim();
+    if (!content) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/community/feed/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ content })
+      });
+      if (!res.ok) return;
+      const created = (await res.json()) as FeedComment;
+      setCommentsByPostId(prev => ({ ...prev, [postId]: [...(prev[postId] || []), created] }));
+      setCommentDraftByPostId(prev => ({ ...prev, [postId]: '' }));
+      setCommunityPosts(prev => prev.map(p => (p.id === postId ? { ...p, comments_count: p.comments_count + 1 } : p)));
+    } catch {
     }
   };
 
@@ -391,7 +466,7 @@ const CommunityPage: React.FC = () => {
                       </label>
                       <select
                         value={newPost.post_type}
-                        onChange={(e) => setNewPost(prev => ({ ...prev, post_type: e.target.value as 'success_story' | 'tip' | 'general' }))}
+                        onChange={(e) => setNewPost(prev => ({ ...prev, post_type: e.target.value as PostType }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                       >
                         <option value="general">General</option>
@@ -402,15 +477,37 @@ const CommunityPage: React.FC = () => {
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        URL de imagen (opcional)
+                        Adjunto (opcional)
                       </label>
-                      <input
-                        type="url"
-                        value={newPost.image_url}
-                        onChange={(e) => setNewPost(prev => ({ ...prev, image_url: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                        placeholder="https://ejemplo.com/imagen.jpg"
-                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <select
+                          value={newPost.media_type}
+                          onChange={(e) =>
+                            setNewPost(prev => ({
+                              ...prev,
+                              media_type: e.target.value as MediaType,
+                              media_url: e.target.value === 'none' ? '' : prev.media_url
+                            }))
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        >
+                          <option value="none">Sin adjunto</option>
+                          <option value="image">Imagen (URL)</option>
+                          <option value="video">Video (URL)</option>
+                        </select>
+                        <input
+                          type="url"
+                          value={newPost.media_url}
+                          onChange={(e) => setNewPost(prev => ({ ...prev, media_url: e.target.value }))}
+                          className="sm:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                          placeholder={
+                            newPost.media_type === 'video'
+                              ? 'https://ejemplo.com/video.mp4'
+                              : 'https://ejemplo.com/imagen.jpg'
+                          }
+                          disabled={newPost.media_type === 'none'}
+                        />
+                      </div>
                     </div>
                     
                     <div className="flex items-center space-x-3">
@@ -427,7 +524,7 @@ const CommunityPage: React.FC = () => {
                         variant="outline"
                         onClick={() => {
                           setShowCreateForm(false);
-                          setNewPost({ title: '', content: '', post_type: 'general', image_url: '' });
+                          setNewPost({ title: '', content: '', post_type: 'general', media_type: 'none', media_url: '' });
                         }}
                       >
                         Cancelar
@@ -449,157 +546,131 @@ const CommunityPage: React.FC = () => {
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Actividad de la Comunidad</h2>
                   <p className="text-gray-600">Descubre las últimas historias y consejos de nuestra comunidad</p>
                 </div>
-                {isAuthenticated && (
-                  <Button
-                    onClick={() => setShowCreateForm(!showCreateForm)}
-                    className="flex items-center space-x-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Crear Post</span>
-                  </Button>
-                )}
               </div>
-              
-              {/* Formulario para crear post */}
-              {showCreateForm && isAuthenticated && (
-                <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle>Crear nueva publicación</CardTitle>
-                    <CardDescription>
-                      Comparte tu experiencia, consejos o ideas con la comunidad
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleCreatePost} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Título (opcional)
-                        </label>
-                        <input
-                          type="text"
-                          value={newPost.title}
-                          onChange={(e) => setNewPost(prev => ({ ...prev, title: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                          placeholder="Título de tu publicación..."
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Contenido *
-                        </label>
-                        <textarea
-                          value={newPost.content}
-                          onChange={(e) => setNewPost(prev => ({ ...prev, content: e.target.value }))}
-                          required
-                          rows={4}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                          placeholder="¿Qué quieres compartir con la comunidad?"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Tipo de publicación
-                        </label>
-                        <select
-                          value={newPost.post_type}
-                          onChange={(e) => setNewPost(prev => ({ ...prev, post_type: e.target.value as 'success_story' | 'tip' | 'general' }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                        >
-                          <option value="general">General</option>
-                          <option value="tip">Consejo</option>
-                          <option value="success_story">Historia de éxito</option>
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          URL de imagen (opcional)
-                        </label>
-                        <input
-                          type="url"
-                          value={newPost.image_url}
-                          onChange={(e) => setNewPost(prev => ({ ...prev, image_url: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                          placeholder="https://ejemplo.com/imagen.jpg"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center space-x-3">
-                        <Button
-                          type="submit"
-                          disabled={isSubmitting || !newPost.content.trim()}
-                          className="flex items-center space-x-2"
-                        >
-                          <Send className="h-4 w-4" />
-                          <span>{isSubmitting ? 'Publicando...' : 'Publicar'}</span>
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setShowCreateForm(false)}
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
-              )}
             </div>
 
             <div className="space-y-6">
               {communityPosts.map((post) => (
-                <Card key={post.id}>
+                <Card key={post.id} id={`post-${post.id}`}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3">
-                        <Image
+                        <img
                           src={post.author.avatar}
                           alt={post.author.name}
-                          width={40}
-                          height={40}
-                          className="rounded-full"
+                          className="h-10 w-10 rounded-full object-cover"
                         />
                         <div>
-                          <div className="font-semibold text-gray-900">{post.author.name}</div>
+                          <div className="font-semibold text-gray-900">
+                            {post.author.name}{' '}
+                            <span className="text-gray-500 font-normal">@{post.author.username}</span>
+                          </div>
                           <div className="flex items-center text-sm text-gray-600">
                             <MapPin className="h-3 w-3 mr-1" />
                             {post.author.location}
                             <span className="mx-2">•</span>
                             <Calendar className="h-3 w-3 mr-1" />
-                            {new Date(post.createdAt).toLocaleDateString()}
+                            {new Date(post.created_at).toLocaleDateString()}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center space-x-1 text-xs bg-gray-100 px-2 py-1 rounded-full">
-                        {getPostTypeIcon(post.type)}
-                        <span>{getPostTypeLabel(post.type)}</span>
+                        {getPostTypeIcon(post.post_type)}
+                        <span>{getPostTypeLabel(post.post_type)}</span>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-700 mb-4">{post.content}</p>
-                    {post.image && (
-                      <Image
-                        src={post.image}
-                        alt="Post image"
-                        width={800}
-                        height={600}
-                        className="w-full h-48 object-cover rounded-lg mb-4"
+                    {post.title ? <div className="font-semibold text-gray-900 mb-2">{post.title}</div> : null}
+                    <p className="text-gray-700 mb-4 whitespace-pre-wrap">{post.content}</p>
+
+                    {post.media_type === 'image' && post.media_url ? (
+                      <img
+                        src={post.media_url}
+                        alt="Imagen del post"
+                        className="w-full h-60 object-cover rounded-lg mb-4"
+                        loading="lazy"
                       />
-                    )}
-                    <div className="flex items-center space-x-6 text-sm text-gray-600">
-                      <button className="flex items-center space-x-1 hover:text-red-600">
+                    ) : null}
+
+                    {post.media_type === 'video' && post.media_url ? (
+                      <video className="w-full rounded-lg mb-4" controls preload="metadata" src={post.media_url} />
+                    ) : null}
+
+                    <div className="flex items-center gap-6 text-sm text-gray-600">
+                      <button
+                        type="button"
+                        className={`flex items-center space-x-1 ${post.is_liked ? 'text-red-600' : 'hover:text-red-600'}`}
+                        onClick={() => toggleLike(post.id)}
+                        disabled={!isAuthenticated}
+                      >
                         <Heart className="h-4 w-4" />
-                        <span>{post.likes}</span>
+                        <span>{post.likes_count}</span>
                       </button>
-                      <button className="flex items-center space-x-1 hover:text-blue-600">
+                      <button
+                        type="button"
+                        className="flex items-center space-x-1 hover:text-blue-600"
+                        onClick={() => toggleComments(post.id)}
+                      >
                         <MessageCircle className="h-4 w-4" />
-                        <span>{post.comments}</span>
+                        <span>{post.comments_count}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="flex items-center space-x-1 hover:text-gray-900"
+                        onClick={() => sharePost(post.id)}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        <span>{post.shares_count}</span>
                       </button>
                     </div>
+
+                    {expandedPostId === post.id ? (
+                      <div className="mt-5 border-t border-gray-200 pt-4 space-y-4">
+                        <div className="space-y-3">
+                          {(commentsByPostId[post.id] || []).map((c) => (
+                            <div key={c.id} className="flex items-start gap-3">
+                              <img src={c.author.avatar} alt={c.author.name} className="h-8 w-8 rounded-full object-cover" />
+                              <div className="flex-1">
+                                <div className="text-sm text-gray-900">
+                                  <span className="font-semibold">{c.author.name}</span>{' '}
+                                  <span className="text-gray-500">@{c.author.username}</span>
+                                  <span className="text-gray-400"> · {new Date(c.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <div className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {isAuthenticated ? (
+                          <div className="flex items-start gap-3">
+                            <textarea
+                              rows={2}
+                              value={commentDraftByPostId[post.id] || ''}
+                              onChange={(e) =>
+                                setCommentDraftByPostId((prev) => ({ ...prev, [post.id]: e.target.value }))
+                              }
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                              placeholder="Escribe un comentario..."
+                            />
+                            <Button
+                              type="button"
+                              onClick={() => submitComment(post.id)}
+                              disabled={!(commentDraftByPostId[post.id] || '').trim()}
+                              className="flex items-center space-x-2"
+                            >
+                              <Send className="h-4 w-4" />
+                              <span>Enviar</span>
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-600">
+                            Inicia sesión para comentar.
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
                   </CardContent>
                 </Card>
               ))}
@@ -619,12 +690,10 @@ const CommunityPage: React.FC = () => {
                   <CardContent className="pt-4">
                     <div className="flex items-center space-x-3">
                       <div className="relative">
-                        <Image
+                        <img
                           src={user.avatar}
                           alt={user.name}
-                          width={48}
-                          height={48}
-                          className="rounded-full"
+                          className="h-12 w-12 rounded-full object-cover"
                         />
                         <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-600 text-white text-xs rounded-full flex items-center justify-center font-bold">
                           {index + 1}
